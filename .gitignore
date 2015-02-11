@@ -1,0 +1,7 @@
+_build
+*.byte
+*.map
+*.js
+*.css
+tests/.stog/cache/*
+tournabox.docdir

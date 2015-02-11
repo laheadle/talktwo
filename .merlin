@@ -1,0 +1,5 @@
+PKG js_of_ocaml
+PKG ojasmine
+PKG base64
+B _build
+EXT js
