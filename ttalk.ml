@@ -36,9 +36,11 @@ let get_data (): state =
 	  else begin
 		let instructions = Array.of_list [
 		  "Step 1 of 4: You go first. Craft a header and a body. You can revise them once, after your partner responds.";
-		  "step 2 of 4: Your partner went first. Craft a header and a body in response. You can revise them once, after your partner revises.";
+		  "step 2 of 4: Your partner got the first word. Craft a header and a body in response.
+ You can revise them once (step 4), after your partner revises (step 3).
+ You get the last word.";
 		  "step 3 of 4: Make your revisions, taking into account your partner's response.";
-		  "step 4 of 4: Your partner is done. Revise your response, taking into account your partner's final word.";
+		  "step 4 of 4: Your partner is done. Revise your response into your last word, taking into account your partner's last word.";
 		  "Done!"
 		] in
 		data := Some {
@@ -80,7 +82,8 @@ let delete_contents elt = elt##innerHTML <- Js.string ""
 let message str =
   let msgElt = Dom_html.getElementById "message" in
   delete_contents msgElt;
-  add_text msgElt str
+  add_text msgElt str;
+  msgElt##scrollIntoView (Js._true)
 
 let get_header state step =
 	state.headers.(step - 1)
@@ -176,7 +179,7 @@ let show_editing state =
   in
   begin
 	match state.curr_step with 1|2|3 ->
-	  update_button "Next" "Ok, Copy this Url and send it to your partner"
+	  update_button "Done" "Ok, Copy this Url and send it to your partner"
 	| 4 ->
 	  update_button "All Done" "Ok, Here is your final Url"
 	| 5 -> ();
