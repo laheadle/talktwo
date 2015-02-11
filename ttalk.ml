@@ -2,7 +2,6 @@
 type state = {
   headers: string array;
   bodies: string array;
-  instructions: string array;
   curr_step: int;
 }
 
@@ -21,36 +20,34 @@ let root = (let loc = Dom_html.window##location in
 			let s = Js.to_string in
 			s(loc##protocol) ^ "//" ^ s(loc##host) ^ s(loc##pathname))
 
-let get_data (): state =
-  begin
-	if !data = None then begin
-	  let str = (Dom_html.window##location##search |> Js.to_string) in
-	  if String.length str > 0 then begin
-		Printf.printf "str found"; flush_all();
- 		let str =
-		  StringLabels.sub str ~pos:1 ~len:(String.length str - 1) |>
-			  Url.urldecode in
-		Printf.printf "%s" str;flush_all();
-		data := Some ((Marshal.from_string (B64.decode str) 0): state)
-	  end
-	  else begin
-		let instructions = Array.of_list [
-		  "Step 1 of 4: You go first. Craft a header and a body. You can revise them once, after your partner responds.";
-		  "step 2 of 4: Your partner got the first word. Craft a header and a body in response.
+let instructions = Array.of_list [
+  "Step 1 of 4: You go first. Craft a header and a body. You can revise them once, after your partner responds.";
+  "Step 2 of 4: Your partner got the first word. Craft a header and a body in response.
  You can revise them once (step 4), after your partner revises (step 3).
  You get the last word.";
-		  "step 3 of 4: Make your revisions, taking into account your partner's response.";
-		  "step 4 of 4: Your partner is done. Revise your response into your last word, taking into account your partner's last word.";
-		  "Done!"
-		] in
+  "Step 3 of 4: Make your revisions, taking into account your partner's response.";
+  "Step 4 of 4: Your partner is done. Revise your response into your last word, taking into account your partner's last word.";
+  "Here are the first and last words. You can share this url. "
+]
+
+let get_data (): state =
+  begin
+	if !data = None then
+	  let str = (Dom_html.window##location##search |> Js.to_string) in
+	  if String.length str > 0 then
+		begin
+		  Printf.printf "str found"; flush_all();
+ 		  let str =
+			StringLabels.sub str ~pos:1 ~len:(String.length str - 1) in
+		  Printf.printf "%s" str;flush_all();
+		  data := Some ((Marshal.from_string (B64.decode ~alphabet:B64.uri_safe_alphabet str) 0): state)
+		end
+	  else
 		data := Some {
-		  instructions;
 		  headers = Array.make 4 "";
 		  bodies = Array.make 4 "";
 		  curr_step = 1;
-		};
-	  end
-	end
+		}
   end;
   get_option !data
 
@@ -97,13 +94,13 @@ let set_header state txt =
 let set_body state txt =
   state.bodies.(state.curr_step - 1) <- txt
 
-let get_instructions state step =
-	state.instructions.(step - 1)
+let get_instructions step =
+	instructions.(step - 1)
 
 let show_instructions state =
   let step = state.curr_step in
   let instructions = Dom_html.getElementById "instructions" in
-  add_text instructions (get_instructions state step)
+  add_text instructions (get_instructions step)
 
 let show_elt elt display =
   elt##style##display <- Js.string display
@@ -126,10 +123,40 @@ let show_previous_pane state =
   | 1 | 5 -> ()
   | _ -> raise Bad_step
 
+let remaining elt max =
+  max - (elt##value |> Js.to_string |> String.length)
+
+let start_counting elt counter num =
+  ignore(Lwt_js_events.keyups elt (fun _ _ ->
+	delete_contents counter;
+	add_text counter (Printf.sprintf "(Max Characters remaining: %d)" (remaining elt num));
+	Lwt.return ()))
+
+let header_max = 80
+let body_max = 600
+
+let within_limits () =
+  let header = get_input "header" in
+  let body = get_textarea "body" in
+  (remaining header header_max) >= 0 &&
+  (remaining body body_max) >= 0
+
+let show_first_draft state =
+  let header = get_input "header" in
+  let body = get_textarea "body" in
+  header##value <- get_header state (state.curr_step - 2) |> Js.string;
+  body##value <- get_body state (state.curr_step - 2) |> Js.string
+
 let show_input_pane state =
   match state.curr_step with 1 | 2 | 3 | 4 ->
 	let input_pane = Dom_html.getElementById "input_pane" in
 	show_elt input_pane "block";
+	let header = get_input "header" in
+	let body = get_textarea "body" in
+	let header_counter = Dom_html.getElementById "header_counter" in
+	let body_counter = Dom_html.getElementById "body_counter" in
+	start_counting header header_counter header_max;
+	start_counting body body_counter body_max
   | 5->()
   | _ -> raise Bad_step
 
@@ -161,8 +188,7 @@ let show_editing state =
 	set_data ({ state with curr_step = state.curr_step + 1 });
 	let str =
 	  (Marshal.to_string (get_data (): state) []) |>
-		  B64.encode  |>
-			  (Url.urlencode ~with_plus:false) in
+		  B64.encode ~alphabet:B64.uri_safe_alphabet in
 	let output = get_input ("output") in
 	output##value <- (Js.string (root ^ "?" ^ str));
 	ignore(Lwt_js_events.clicks output (fun _ _ ->
@@ -174,8 +200,11 @@ let show_editing state =
 	let btn = Dom_html.getElementById "input_button" in
 	Dom.appendChild btn (doc##createTextNode (btn_txt |> Js.string));
 	ignore(Lwt_js_events.clicks btn (fun _ _ ->
-	  update ();
-	  Lwt.return (message message_txt)))
+	  match within_limits () with
+		true ->
+		  update ();
+		  Lwt.return (message message_txt)
+	  | false -> Lwt.return_unit))
   in
   begin
 	match state.curr_step with 1|2|3 ->
@@ -185,6 +214,12 @@ let show_editing state =
 	| 5 -> ();
 	| _ -> raise Bad_step
   end;
+  begin
+	match state.curr_step with 3|4 ->
+	  show_first_draft state
+	| 1|2|5 -> ()
+	| _ -> raise Bad_step
+  end;	
   show_final_pane state
 
 

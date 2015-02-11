@@ -3,6 +3,7 @@ project=ttalk
 pkgs=-pkgs js_of_ocaml.log,js_of_ocaml,base64,js_of_ocaml.syntax -syntax camlp4o
 ocamlbuild_flags=-cflag -annot -use-ocamlfind
 JSO_FLAGS := +weak.js
+outputs=ttalk.css ttalk.js ttalk.html
 
 ifeq ($(debug),)
 FLAGS :=  $(ocamlbuild_flags) $(pkgs)
@@ -15,9 +16,11 @@ endif
 all: js
 	rm -rf ~/Downloads/ttalk
 	mkdir -p ~/Downloads/ttalk
-	cp ttalk.css ttalk.js ttalk.html ~/Downloads/ttalk
+	cp $(outputs) ~/Downloads/ttalk
 
 js:
 	ocamlbuild $(FLAGS) $(project).byte
 	js_of_ocaml $(JSO_FLAGS) $(project).byte
 
+upload:
+	./upload.sh $(outputs)
