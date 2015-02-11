@@ -21,13 +21,13 @@ let root = (let loc = Dom_html.window##location in
 			s(loc##protocol) ^ "//" ^ s(loc##host) ^ s(loc##pathname))
 
 let instructions = Array.of_list [
-  "Step 1 of 4: You go first. Craft a header and a body. You can revise them once, after your partner responds.";
-  "Step 2 of 4: Your partner got the first word. Craft a header and a body in response.
- You can revise them once (step 4), after your partner revises (step 3).
+  "Step 1 of 4: You have the first word. Craft a header and a body. You can revise them once, after your partner responds.";
+  "Step 2 of 4: Your partner's draft is below. Now draft a response.
+ You can revise it once (step 4), after your partner revises (step 3).
  You get the last word.";
   "Step 3 of 4: Make your revisions, taking into account your partner's response.";
-  "Step 4 of 4: Your partner is done. Revise your response into your last word, taking into account your partner's last word.";
-  "Here are the first and last words. You can share this url. "
+  "Step 4 of 4: Your partner is done. Revise your response into your last word, taking into account your partner's finished word.";
+  "This is a dialog. You can share the url. "
 ]
 
 let get_data (): state =
@@ -161,25 +161,24 @@ let show_input_pane state =
   | _ -> raise Bad_step
 
 let show_final_pane state =
-  match state.curr_step with 1|2|3|4 -> ()
-  | 5 ->
-	let header1 = Dom_html.getElementById "final_header_1" in
-	let body1 = Dom_html.getElementById "final_body_1" in
-	let header2 = Dom_html.getElementById "final_header_2" in
-	let body2 = Dom_html.getElementById "final_body_2" in
-	add_text header1 (get_header state 3);
-	add_text body1 (get_body state 3);
-	add_text header2 (get_header state 4);
-	add_text body2 (get_body state 4);
-	show_elt (Dom_html.getElementById "final_pane") "block"
-  | _ -> raise Bad_step
+  let header1 = Dom_html.getElementById "final_header_1" in
+  let body1 = Dom_html.getElementById "final_body_1" in
+  let header2 = Dom_html.getElementById "final_header_2" in
+  let body2 = Dom_html.getElementById "final_body_2" in
+  add_text header1 (get_header state 3);
+  add_text body1 (get_body state 3);
+  add_text header2 (get_header state 4);
+  add_text body2 (get_body state 4);
+  let link_elt = Dom_html.getElementById "link_to_new" in
+  link_elt##setAttribute (Js.string "href", Js.string root);
+  show_elt (Dom_html.getElementById "final_pane") "block"
 
 let show_editing state =
   Printf.printf "step: %d" state.curr_step;flush_all();
   show_instructions state;
   show_input_pane state;
   show_previous_pane state;
-  let update () =
+  let get_next_url () =
 	let state = get_data () in
 	let header_elt = get_input "header" in
 	set_header state (Js.to_string header_elt##value);
@@ -189,28 +188,41 @@ let show_editing state =
 	let str =
 	  (Marshal.to_string (get_data (): state) []) |>
 		  B64.encode ~alphabet:B64.uri_safe_alphabet in
-	let output = get_input ("output") in
-	output##value <- (Js.string (root ^ "?" ^ str));
-	ignore(Lwt_js_events.clicks output (fun _ _ ->
-	  Lwt.return output##select ()));
-	show_elt output "inline";
+	(root ^ "?" ^ str)
+  in
+  let update () =
+	let url = get_next_url () in
+	let copybox = get_input ("copybox") in
+	copybox##value <- (Js.string url);
+	ignore(Lwt_js_events.clicks copybox (fun _ _ ->
+	  Lwt.return copybox##select ()));
+	show_elt copybox "inline";
 	hide_instructions ()
   in
-  let update_button btn_txt message_txt =
+  let update_button btn_txt message_txt update_fn =
 	let btn = Dom_html.getElementById "input_button" in
 	Dom.appendChild btn (doc##createTextNode (btn_txt |> Js.string));
 	ignore(Lwt_js_events.clicks btn (fun _ _ ->
 	  match within_limits () with
 		true ->
-		  update ();
-		  Lwt.return (message message_txt)
-	  | false -> Lwt.return_unit))
+		  begin
+			update_fn ();
+			match message_txt with
+			  None -> Lwt.return_unit
+			| Some message_txt ->
+			  Lwt.return (message message_txt)
+		  end
+	  | false -> Lwt.return (message "Too much information! Boring!")))
   in
   begin
+	let show_final_url () =
+	  let url = get_next_url () in
+	  Dom_html.window##location##replace (Js.string url)
+	in
 	match state.curr_step with 1|2|3 ->
-	  update_button "Done" "Ok, Copy this Url and send it to your partner"
+	  update_button "Done" (Some "Ok, Copy this Url and send it to your partner") update
 	| 4 ->
-	  update_button "All Done" "Ok, Here is your final Url"
+	  update_button "All Done" None show_final_url
 	| 5 -> ();
 	| _ -> raise Bad_step
   end;
@@ -220,11 +232,17 @@ let show_editing state =
 	| 1|2|5 -> ()
 	| _ -> raise Bad_step
   end;	
-  show_final_pane state
-
+  begin
+	match state.curr_step with 1|2|3|4 -> ()
+	| 5 ->
+	  show_final_pane state
+	| _ -> raise Bad_step
+  end
 
 
 let main () =
-  show_editing (get_data ())
-
+  try
+	show_editing (get_data ())
+  with
+	_ -> message ("Ooops...I broke. Check your cut/paste, try another web browser, then report the bug to laheadle@gmail.com")
 let () = main ()
