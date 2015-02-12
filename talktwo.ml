@@ -31,13 +31,19 @@ let instructions = Array.of_list [
   welcome ^ "Here is a dialog. You can share the url. "
 ]
 
+exception Bad_input
+
 let get_data (): state =
 	if !data = None then
 	  let str = (Dom_html.window##location##search |> Js.to_string) in
 	  if String.length str > 0 then
  		let str = StringLabels.sub str ~pos:1 ~len:(String.length str - 1) in
 		let plain = (B64.decode ~alphabet:B64.uri_safe_alphabet str) in
-		data := Some (Marshal.from_string plain 0 : state)
+		try
+		  data := Some (Marshal.from_string plain 0 : state)
+		with
+		  _ ->
+			raise Bad_input
 	  else
 		data := Some {
 		  authors = Array.make 2 "";
@@ -330,6 +336,7 @@ let main () =
 	try
 	  show_editing (get_data ())
 	with
-	  _ -> message ("Ooops...I broke. Check your cut/paste, try another web browser, then report the bug to laheadle@gmail.com")
+	  Bad_input -> message ("Bad input. Check what you entered. If it's definitely right, then try another web browser.")
+	| _ -> message ("Ooops...I broke. Report the bug to laheadle@gmail.com")
 
 let () = main ()
