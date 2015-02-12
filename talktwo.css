@@ -30,13 +30,13 @@ h1 {
 	font-size: 1.3em;
 }
 
-#previous_pane, .word {
+.quoted {
 	border-left: 4px solid gray;
 	padding: 10px 20px;
 }
 
-#first_author_out, #second_author_out {
-	font-face: italic;
+.name {
+	font-style: italic;
 }
 
 .hide { display: none; }

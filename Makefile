@@ -1,9 +1,9 @@
 
-project=ttalk
+project=talktwo
 pkgs=-pkgs js_of_ocaml.log,js_of_ocaml,base64,js_of_ocaml.syntax -syntax camlp4o
 ocamlbuild_flags=-cflag -annot -use-ocamlfind
 JSO_FLAGS := +weak.js
-outputs=ttalk.css ttalk.js ttalk.html
+outputs=talktwo.css talktwo.js talktwo.html
 
 ifeq ($(debug),)
 FLAGS :=  $(ocamlbuild_flags) $(pkgs)
@@ -14,9 +14,9 @@ JSO_FLAGS += --enable excwrap --debuginfo --pretty --noinline
 endif
 
 all: js
-	rm -rf ~/Downloads/ttalk
-	mkdir -p ~/Downloads/ttalk
-	cp $(outputs) ~/Downloads/ttalk
+	rm -rf ~/Downloads/talktwo
+	mkdir -p ~/Downloads/talktwo
+	cp $(outputs) ~/Downloads/talktwo
 
 js:
 	ocamlbuild $(FLAGS) $(project).byte

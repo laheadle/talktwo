@@ -5,3 +5,4 @@ _build
 tests/.stog/cache/*
 ttalk.docdir
 upload.sh
+__notes.txt

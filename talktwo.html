@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-	<link rel="stylesheet" href="ttalk.css"></link>
+	<link rel="stylesheet" href="talktwo.css"></link>
   </head>
   <body>
 	<p id="message"></p>
@@ -12,22 +12,23 @@
 	  <input id="copybox" class="hide"></input>
 	</div>
 
-	<div id="first_author_pane" class="hide">
+	<div id="first_author_in_pane" class="hide">
 	  What do we call you? <span class="counter" id="first_author_counter"></span> <br>
 	  <input id="first_author_in"></input>
 	</div>
 
-	<div id="second_author_pane" class="hide">
-	  Your partner is called: <span id="first_author"></span>
-	  What do we call you? <span class="counter" id="second_author_counter"></span> <br> 
-	  <input id="second_author_in"></input>
+	<div id="previous_pane" class="hide">
+	  <p> Here is what your partner wrote:</p>
+	  <div class="quoted">
+		<h1 id="previous_header"></h1>
+		<p id="previous_body"></p>
+	  </div>
 	</div>
 
-
-	<div id="previous_pane" class="hide">
-	  <p> Here is what your partner just wrote:</p>
-	  <h1 id="previous_header"></h1>
-	  <p id="previous_body"></p>
+	<div id="second_author_in_pane" class="hide">
+	  Your partner is <span id="first_author" class="name"></span>;
+	  What do we call you? <span class="counter" id="second_author_counter"></span> <br> 
+	  <input id="second_author_in"></input>
 	</div>
 
 
@@ -40,14 +41,14 @@
 	</div>
 
 	<div id="final_pane" class="hide">
-	  <span class="firstw"><span id="first_author_out"></span> had the first word:</span>
-	  <div class="word">
+	  <span class="firstw"><span id="first_author_out" class="name"></span> had the first word:</span>
+	  <div class="quoted">
 		<h1 id="final_header_1"></h1>
 		<p id="final_body_1"></p>
 	  </div>
 
-	  <span class="lastw"><span id="second_author_out"></span> had the last word:</span>
-	  <div class="word">
+	  <span class="lastw"><span id="second_author_out" class="name"></span> had the last word:</span>
+	  <div class="quoted">
 		<h1 id="final_header_2"></h1>
 		<p id="final_body_2"></p>
 	  </div>
@@ -55,6 +56,6 @@
 	  <p id="link_to_new_wrapper">You can <a id="link_to_new" href="">Create a new dialog.</a></p>
 	</div>
 
-	<script src="ttalk.js"></script>
+	<script src="talktwo.js"></script>
   </body>
 </html>
