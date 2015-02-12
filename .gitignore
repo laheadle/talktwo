@@ -2,7 +2,6 @@ _build
 *.byte
 *.map
 *.js
-*.css
 tests/.stog/cache/*
 ttalk.docdir
 upload.sh

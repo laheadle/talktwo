@@ -1,0 +1,46 @@
+
+body {
+margin: 10px 20px;
+font-family: Arial;
+}
+* {
+	margin: 10px 0;
+}
+
+#message {
+	background-color: pink;
+}
+
+input, textarea { width: 400px; }
+
+textarea {
+	height: 220px;
+}
+
+/*
+.firstw {
+	background-color: LightGreen;
+}
+
+.lastw {
+	background-color: LightGreen;
+}
+*/
+h1 {
+	font-size: 1.3em;
+}
+
+#previous_pane, .word {
+	border-left: 4px solid gray;
+	padding: 10px 20px;
+}
+
+#first_author_out, #second_author_out {
+	font-face: italic;
+}
+
+.hide { display: none; }
+
+#link_to_new_wrapper {
+	margin-top: 30px;
+}
