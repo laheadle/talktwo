@@ -130,6 +130,17 @@ let show_previous_pane state =
 let remaining elt max =
   max - (elt##value |> Js.to_string |> String.length)
 
+let matches ~str regex =
+  Regexp.regexp regex |>
+	  (fun rx -> Regexp.string_match rx str 0)
+  |> is_some
+
+let is_empty elt =
+  let str = elt##value |> Js.to_string in
+  String.length str = 0 || matches ~str "^\\s+$"
+
+let not_empty elt = not (is_empty elt)
+
 let has_remaining elt max = remaining elt max >= 0
 
 let start_counting elt counter num =
@@ -147,19 +158,40 @@ let header_max = 80
 let body_max = 600
 let author_max = 80
 
-let within_limits check_author () =
+let get_errors check_author =
   let header = get_input "header" in
   let body = get_textarea "body" in
-  let main_result = (has_remaining header header_max) &&
-	(has_remaining body body_max)
-  in
   let check_author_fields () =
 	match check_author with None -> true
 	| Some which_author ->
 	  let author_elt = get_input which_author in
 	  has_remaining author_elt author_max
   in
-  main_result && (check_author_fields ())
+  let not_empty_author () =
+	match check_author with None -> true
+	| Some which_author ->
+	  let author_elt = get_input which_author in
+	  not_empty author_elt
+  in
+  let rec find_false = function
+	| [] -> None 
+	| (true, _) :: tail -> find_false tail
+	| (false, error_msg) :: _ -> Some error_msg
+  in
+  find_false
+	[has_remaining header header_max,
+	 "Too much header! Boring!";
+	 (has_remaining body body_max,
+	  "Too much body! Boring!");
+	 ((check_author_fields ()),
+	  "That's a long name. How about a nickname?");
+	 ((not_empty header),
+	  "Empty header - I need something!");
+	 ((not_empty body),
+	  "Empty body - I need something!");
+	 (not_empty_author (),
+	  "Empty author - I need something!")]
+
 
 let insert_first_draft state =
   let header = get_input "header" in
@@ -216,17 +248,29 @@ let show_second_author_in_pane state =
   let first_author = Dom_html.getElementById "first_author" in
   add_text first_author (get_author state 0)
 
-let get_next_url () =
-  let state = get_data () in
-  let header_elt = get_input "header" in
-  set_header state (Js.to_string header_elt##value);
-  let body_elt = get_textarea "body" in
-  set_body state (Js.to_string body_elt##value);
-  set_data ({ state with curr_step = state.curr_step + 1 });
-  let str =
-	(Marshal.to_string (get_data (): state) []) |>
-		B64.encode ~alphabet:B64.uri_safe_alphabet in
-  (root ^ "?" ^ str)
+(** Can be called more than once, so we make sure not to increment
+	curr_step more than once *)
+let get_next_url =
+  let next_step = ref 0 in
+  fun () ->
+	begin
+	  let state = get_data () in
+	  let make_url () =
+		let header_elt = get_input "header" in
+		set_header state (Js.to_string header_elt##value);
+		let body_elt = get_textarea "body" in
+		set_body state (Js.to_string body_elt##value);
+		set_data ({ state with curr_step = !next_step });
+		let str =
+		  (Marshal.to_string (get_data (): state) []) |>
+			  B64.encode ~alphabet:B64.uri_safe_alphabet in
+		(root ^ "?" ^ str)
+	  in
+	  if !next_step = 0 then
+		next_step := state.curr_step + 1
+	  else ();
+	  make_url ()
+	end
 
 let show_copybox url =
   let copybox = get_input ("copybox") in
@@ -261,17 +305,17 @@ let update_button check_author btn_txt message_txt update_fn =
 	  | Some message_txt ->
 		Lwt.return (message message_txt)
 	in
-	match within_limits check_author () with
-	  true ->
+	match get_errors check_author with
+	  None ->
 		succeeded ()
-	| false -> Lwt.return (message "Too much information! Boring!")
+	| Some msg -> Lwt.return (message msg)
   in
   ignore(Lwt_js_events.keyups (doc) (fun ev _ ->
 	if ev##keyCode = 13 then handle ()
 	else Lwt.return_unit));
   ignore(Lwt_js_events.clicks btn (fun _ _ -> handle ()))
 
-let show_editing state =
+let show_dialog_state state =
   show_instructions state;
   begin
 	match state.curr_step with 1 ->
@@ -331,10 +375,10 @@ let show_editing state =
 let main () =
   let debug = false in
   if debug then
-	show_editing (get_data ())
+	show_dialog_state (get_data ())
   else
 	try
-	  show_editing (get_data ())
+	  show_dialog_state (get_data ())
 	with
 	  Bad_input -> message ("Bad input. Check what you entered. If it's definitely right, then try another web browser.")
 	| _ -> message ("Ooops...I broke. Report the bug to laheadle@gmail.com")
