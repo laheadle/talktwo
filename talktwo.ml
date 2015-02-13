@@ -119,13 +119,37 @@ let hide_instructions () =
   let instructions = Dom_html.getElementById "instructions" in
   hide_elt instructions
 
+let show_diff from _to elt =
+  let from = Js.string from in
+  let _to = Js.string _to in
+  let diff = Jsdiff._JsDiff##diffWords(from, _to) in
+
+  diff##forEach(fun (part : Jsdiff.part Js.t) _ _ ->
+	let added = Js.Optdef.get (part##added) (fun () -> Js._false) in
+	let removed = Js.Optdef.get (part##removed) (fun () -> Js._false) in
+	let clazz = match added, removed with
+		(t, _) when t = Js._true -> "added"
+	  | (_, t) when t = Js._true -> "removed"
+	  | _, _ -> ""
+	in
+	let span = Dom_html.createSpan doc in
+	span##className <- Js.string clazz;
+	Dom.appendChild span (doc##createTextNode (part##value));
+	ignore(Dom.appendChild elt span))
+
 let show_previous_pane state =
   let previous_pane = Dom_html.getElementById "previous_pane" in
   show_elt previous_pane "block";
   let h = Dom_html.getElementById "previous_header" in
-  add_text h (state.curr_step - 1 |> (get_header state));
+  if state.curr_step = 4 then
+	show_diff (get_header state 1) (get_header state 3) h
+  else
+	add_text h (state.curr_step - 1 |> (get_header state));
   let body = Dom_html.getElementById "previous_body" in
-  add_text body (state.curr_step -1 |> (get_body state))
+  if state.curr_step = 4 then
+	show_diff (get_body state 1) (get_body state 3) body
+  else
+	add_text body (state.curr_step - 1 |> (get_body state))
 
 let remaining elt max =
   max - (elt##value |> Js.to_string |> String.length)

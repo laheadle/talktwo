@@ -7,6 +7,14 @@ font-family: Arial;
 	margin: 10px 0;
 }
 
+.added {
+	color: green;
+}
+
+.removed {
+	text-decoration: line-through;
+}
+
 #message {
 	background-color: pink;
 }
