@@ -6,7 +6,7 @@ type state = {
   curr_step: int;
 }
 
-let data = ref None
+let current_state = ref None
 
 let is_some = function None -> false | _ -> true
 let is_none = function None -> true | _ -> false
@@ -25,47 +25,62 @@ let welcome = "This is Talktwo, a dialog maker. "
 
 let instructions = Array.of_list [
   welcome ^ "You have the first word. Draft a header and a body. You can revise them once, after your partner responds.";
-  welcome ^ "Somebody started a dialog with you, and created the draft below. You can read it, and draft a short response. Your partner can revise their draft once, and then you can revise yours. So you get the last word.";
+  welcome ^ "Somebody started a dialog with you, and created the draft below. You can read it, and draft a short response. Write whatever you want; you don't have to follow your partner closely. Your partner can revise their draft once, and then you can revise yours. So you get the last word.";
   "Make your revisions, taking into account your partner's response.";
-  "Last Step: Your partner is done. Revise your response into your last word, taking into account your partner's finished word.";
+  "Last Step: Your partner is done. Revise your response into your last word.";
   welcome ^ "Here is a dialog. You can share the url. "
 ]
 
 exception Bad_input
 
-let get_data (): state =
-	if !data = None then
-	  let str = (Dom_html.window##location##search |> Js.to_string) in
-	  if String.length str > 0 then
- 		let str = StringLabels.sub str ~pos:1 ~len:(String.length str - 1) in
-		let plain = (B64.decode ~alphabet:B64.uri_safe_alphabet str) in
-		try
-		  data := Some (Marshal.from_string plain 0 : state)
-		with
-		  _ ->
-			raise Bad_input
-	  else
-		data := Some {
-		  authors = Array.make 2 "";
-		  headers = Array.make 4 "";
-		  bodies = Array.make 4 "";
-		  curr_step = 1;
-		}
-	else ();
-  get_option !data
+let set_current_state (state : state) =
+  current_state := Some state  
 
-let set_data (state : state) =
-  data := Some state  
+let get_current_state (): state =
+  let load_or_init_state () =
+	let str = (Dom_html.window##location##search |> Js.to_string) in
+	if String.length str > 0 then
+ 	  let str = StringLabels.sub str ~pos:1 ~len:(String.length str - 1) in
+	  let plain = (B64.decode ~alphabet:B64.uri_safe_alphabet str) in
+	  try
+		(Marshal.from_string plain 0 : state)
+	  with
+		_ ->
+		  raise Bad_input
+	else
+	  {
+		authors = Array.make 2 "";
+		headers = Array.make 4 "";
+		bodies = Array.make 4 "";
+		curr_step = 1;
+	  }
+  in
+  if !current_state = None then
+	set_current_state (load_or_init_state ())
+  else ();
+  get_option !current_state
 
-let get_step () = let st = get_data () in st.curr_step
+let get_step () = let st = get_current_state () in st.curr_step
 
 let doc = Dom_html.document
 
 exception Bad_step
 
+let add_text elt str =
+  Dom.appendChild elt (doc##createTextNode (Js.string str))
+
+let show_elt elt display =
+  elt##style##display <- Js.string display
+
+let hide_elt elt  =
+  elt##style##display <- Js.string "none"
+
+let get_elt = Dom_html.getElementById
+
+
 let get_coerced id coercion =
   Js.Opt.get
-	(coercion (Dom_html.getElementById id))
+	(coercion (get_elt id))
 	(fun () -> assert false)
 
 let get_input id =
@@ -74,13 +89,11 @@ let get_input id =
 let get_textarea id =
   get_coerced id Dom_html.CoerceTo.textarea
 
-let add_text elt str =
-  Dom.appendChild elt (doc##createTextNode (Js.string str))
 
 let delete_contents elt = elt##innerHTML <- Js.string ""
 
 let message str =
-  let msgElt = Dom_html.getElementById "message" in
+  let msgElt = get_elt "message" in
   delete_contents msgElt;
   add_text msgElt str;
   msgElt##scrollIntoView (Js._true)
@@ -97,26 +110,20 @@ let set_header state txt =
 let set_body state txt =
   state.bodies.(state.curr_step - 1) <- txt
 
-let get_author state i = state.authors.(i)
-
-let set_author state i author = state.authors.(i) <- author
-
 let get_instructions step =
 	instructions.(step - 1)
 
 let show_instructions state =
   let step = state.curr_step in
-  let instructions = Dom_html.getElementById "instructions" in
+  let instructions = get_elt "instructions" in
   add_text instructions (get_instructions step)
 
-let show_elt elt display =
-  elt##style##display <- Js.string display
+let get_author state i = state.authors.(i)
 
-let hide_elt elt  =
-  elt##style##display <- Js.string "none"
+let set_author state i author = state.authors.(i) <- author
 
 let hide_instructions () =
-  let instructions = Dom_html.getElementById "instructions" in
+  let instructions = get_elt "instructions" in
   hide_elt instructions
 
 let show_diff from _to elt =
@@ -138,18 +145,18 @@ let show_diff from _to elt =
 	ignore(Dom.appendChild elt span))
 
 let show_previous_pane state =
-  let previous_pane = Dom_html.getElementById "previous_pane" in
+  let show getter elt =
+	if state.curr_step = 4 then
+	  show_diff (getter state 1) (getter state 3) elt
+	else
+	  add_text elt (state.curr_step - 1 |> (getter state))
+  in
+  let previous_pane = get_elt "previous_pane" in
   show_elt previous_pane "block";
-  let h = Dom_html.getElementById "previous_header" in
-  if state.curr_step = 4 then
-	show_diff (get_header state 1) (get_header state 3) h
-  else
-	add_text h (state.curr_step - 1 |> (get_header state));
-  let body = Dom_html.getElementById "previous_body" in
-  if state.curr_step = 4 then
-	show_diff (get_body state 1) (get_body state 3) body
-  else
-	add_text body (state.curr_step - 1 |> (get_body state))
+  let h = get_elt "previous_header" in
+  show get_header h;
+  let body = get_elt "previous_body" in
+  show get_body body
 
 let remaining elt max =
   max - (elt##value |> Js.to_string |> String.length)
@@ -224,52 +231,48 @@ let insert_first_draft state =
   body##value <- get_body state (state.curr_step - 2) |> Js.string
 
 let show_input_pane state =
-  let input_pane = Dom_html.getElementById "input_pane" in
+  let input_pane = get_elt "input_pane" in
   show_elt input_pane "block";
   let header = get_input "header" in
   let body = get_textarea "body" in
-  let header_counter = Dom_html.getElementById "header_counter" in
-  let body_counter = Dom_html.getElementById "body_counter" in
+  let header_counter = get_elt "header_counter" in
+  let body_counter = get_elt "body_counter" in
   start_counting header header_counter header_max;
   start_counting body body_counter body_max
 
 let show_final_pane state =
-  let header1 = Dom_html.getElementById "final_header_1" in
-  let body1 = Dom_html.getElementById "final_body_1" in
-  let header2 = Dom_html.getElementById "final_header_2" in
-  let body2 = Dom_html.getElementById "final_body_2" in
+  let header1 = get_elt "final_header_1" in
+  let body1 = get_elt "final_body_1" in
+  let header2 = get_elt "final_header_2" in
+  let body2 = get_elt "final_body_2" in
   add_text header1 (get_header state 3);
   add_text body1 (get_body state 3);
   add_text header2 (get_header state 4);
   add_text body2 (get_body state 4);
-  let link_elt = Dom_html.getElementById "link_to_new" in
+  let link_elt = get_elt "link_to_new" in
   link_elt##setAttribute (Js.string "href", Js.string root);
   let show_author author_out n =
-	let author_out_elt = Dom_html.getElementById author_out in
-	begin
-	  let txt = (get_author state n) in
-	  Printf.printf "%s %s %d" author_out txt n
-	end;
+	let author_out_elt = get_elt author_out in
 	add_text author_out_elt (get_author state n)
   in
   show_author "first_author_out" 0;
   show_author "second_author_out" 1;
-  show_elt (Dom_html.getElementById "final_pane") "block"
+  show_elt (get_elt "final_pane") "block"
 
 
 let show_first_author_in_pane () =
-  show_elt (Dom_html.getElementById "first_author_in_pane") "block";
+  show_elt (get_elt "first_author_in_pane") "block";
   let input = get_input "first_author_in" in
-  let counter = Dom_html.getElementById "first_author_counter" in
+  let counter = get_elt "first_author_counter" in
   start_counting input counter author_max
 
 
 let show_second_author_in_pane state =
-  show_elt (Dom_html.getElementById "second_author_in_pane") "block";
+  show_elt (get_elt "second_author_in_pane") "block";
   let input = get_input "second_author_in" in
-  let counter = Dom_html.getElementById "second_author_counter" in
+  let counter = get_elt "second_author_counter" in
   start_counting input counter author_max;
-  let first_author = Dom_html.getElementById "first_author" in
+  let first_author = get_elt "first_author" in
   add_text first_author (get_author state 0)
 
 (** Can be called more than once, so we make sure not to increment
@@ -278,15 +281,15 @@ let get_next_url =
   let next_step = ref 0 in
   fun () ->
 	begin
-	  let state = get_data () in
+	  let state = get_current_state () in
 	  let make_url () =
 		let header_elt = get_input "header" in
 		set_header state (Js.to_string header_elt##value);
 		let body_elt = get_textarea "body" in
 		set_body state (Js.to_string body_elt##value);
-		set_data ({ state with curr_step = !next_step });
+		set_current_state ({ state with curr_step = !next_step });
 		let str =
-		  (Marshal.to_string (get_data (): state) []) |>
+		  (Marshal.to_string (get_current_state (): state) []) |>
 			  B64.encode ~alphabet:B64.uri_safe_alphabet in
 		(root ^ "?" ^ str)
 	  in
@@ -305,13 +308,13 @@ let show_copybox url =
   hide_instructions ()
 
 let update_button check_author btn_txt message_txt update_fn =
-  let btn = Dom_html.getElementById "input_button" in
+  let btn = get_elt "input_button" in
   Dom.appendChild btn (doc##createTextNode (btn_txt |> Js.string));
   let handle () =
 	let succeeded () =
 	  let set_author author n =
 		let author_elt = get_input author in
-		let state = get_data () in
+		let state = get_current_state () in
 		set_author state n (author_elt##value |> Js.to_string)
 	  in
 	  begin
@@ -399,10 +402,10 @@ let show_dialog_state state =
 let main () =
   let debug = false in
   if debug then
-	show_dialog_state (get_data ())
+	show_dialog_state (get_current_state ())
   else
 	try
-	  show_dialog_state (get_data ())
+	  show_dialog_state (get_current_state ())
 	with
 	  Bad_input -> message ("Bad input. Check what you entered. If it's definitely right, then try another web browser.")
 	| _ -> message ("Ooops...I broke. Report the bug to laheadle@gmail.com")

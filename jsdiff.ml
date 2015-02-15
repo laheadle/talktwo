@@ -8,8 +8,6 @@ object
   method removed: bool t Optdef.t readonly_prop
 end
 
-type part_callback = (part t -> unit) callback
-
 class type jsdiff =
 object
   method diffChars: js_string t -> js_string t -> part t js_array t meth
