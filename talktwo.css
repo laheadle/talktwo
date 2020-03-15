@@ -17,6 +17,7 @@ font-family: Arial;
 
 #message {
 	background-color: pink;
+    padding: 4px;
 }
 
 input, textarea { width: 400px; }
