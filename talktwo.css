@@ -1,8 +1,10 @@
 
 body {
-margin: 10px 20px;
-font-family: Arial;
+    margin: 30px auto;
+    font-family: Arial;
+    width: 900px;
 }
+
 * {
 	margin: 10px 0;
 }
@@ -18,9 +20,11 @@ font-family: Arial;
 #message {
 	background-color: pink;
     padding: 0 4px;
+    width: 80%;
+    margin: 0 auto;
 }
 
-input, textarea { width: 700px; }
+input, textarea { width: 900px; }
 
 textarea {
 	height: 220px;
