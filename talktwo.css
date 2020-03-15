@@ -25,6 +25,10 @@ body {
 
 input, textarea { width: 900px; }
 
+#instructions {
+    margin-bottom: 15px;
+}
+
 textarea {
 	height: 220px;
 }
