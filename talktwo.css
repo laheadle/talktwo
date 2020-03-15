@@ -3,6 +3,12 @@ body {
     margin: 30px auto;
     font-family: Arial;
     width: 900px;
+    font-size: 20px;
+}
+
+input {
+    height: 25px;
+    border-radius: 5px;
 }
 
 #input_button {
@@ -41,7 +47,11 @@ body {
     margin: 0 auto;
 }
 
-input, textarea { width: 900px; }
+input, textarea {
+    width: 900px;
+    border: 1px solid gray;
+    font-size: 18px;
+}
 
 #instructions {
     margin-bottom: 15px;
