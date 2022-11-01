@@ -7,21 +7,24 @@
             ))
 
 
-(def first-step 0)
+(def first-initiation 0)
+(def first-response 1)
 (def final-initiation 2)
 (def final-response 3)
 (def last-step 4)
 
 (defn init [steps]
-  (let [current-step (if steps (count steps) first-step)
+  (let [current-step (if steps (count steps) first-initiation)
         steps (if (= current-step last-step)
                 steps
                 (conj (or steps [])
                       (cond
-                        (<= current-step 1) {:name ""
+                        (<= current-step first-response) {:name ""
                                              :header ""
                                              :body ""}
-                        :else (get steps (if (= current-step 2) first-step 1)))))]
+                        :else (get steps (if (= current-step final-initiation)
+                                           first-initiation
+                                           first-response)))))]
     {:state {:form-fields :not-focused
              :step :initiator-first}
      :elements {}
@@ -175,11 +178,39 @@
   (let [world (r/atom (init (read-url)))]
     (prn (str "initializing: " @world))
     (fn []
-      [:div.dialog
-       (if (= (:current-step @world) last-step)
-         [done world]
+      (cond
+        (= (:current-step @world) first-initiation)
+        [:div.dialog
+         "Enter your first stuff here"
          [:div.form
-          [form world]])])))
+          [form world]]]
+        (= (:current-step @world) first-response)
+        [:div.dialog
+         "Here is what the initiator wrote"
+         [pretty @world first-initiation]
+         [:div.form
+          [form world]]]
+        (= (:current-step @world) final-initiation)
+        [:div.dialog
+         "Here is what you wrote"
+         [pretty @world first-initiation]
+         "Here is your partner's response"
+         [pretty @world first-response]
+         [:div.form
+          [form world]]]
+        (= (:current-step @world) final-response)
+        [:div.dialog
+         "Here is what the initiator wrote"
+         [pretty @world first-initiation]
+         "Here is your first response"
+         [pretty @world first-response]
+         "Here is your partner's revised initiation"
+         [pretty @world final-initiation]
+         [:div.form
+          [form world]]]
+        (= (:current-step @world) last-step)
+        [:div.dialog
+         [done world]]))))
 
 (prn (:a {:a 1} 2))
 
