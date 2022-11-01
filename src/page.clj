@@ -18,6 +18,7 @@
       [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
       [:link {:rel "shortcut icon" :href "data:,"}]
       [:link {:rel "apple-touch-icon" :href "data:,"}]
+      [:link {:rel "stylesheet" :href "talktwo.css"}]
       [:script {:crossorigin nil :src "https://unpkg.com/react@17/umd/react.production.min.js"}]
       [:script {:crossorigin nil :src "https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"}]
       [:script {:src "https://cdn.jsdelivr.net/gh/borkdude/scittle@0.0.1/js/scittle.js" :type "application/javascript"}]
@@ -39,7 +40,9 @@
     [:get "/"] {:body (home-page req "core.cljs")
                 :status 200}
     [:get "/core.cljs"] {:body (slurp"core.cljs")
-                             :status 200}))
+                         :status 200}
+    [:get "/talktwo.css"] {:body (slurp"talktwo.css")
+                         :status 200}))
 
 (defn core-http-server []
   (srv/run-server home-routes {:port port}))

@@ -123,6 +123,35 @@
    [:div (get-in world [:steps step :header])]
    [:div (get-in world [:steps step :body])]])
 
+(defn get-changes [world previous-step step key]
+  (prn (str "get-changes: "
+            [world previous-step step key
+             (get-in world [:steps previous-step key])
+             (get-in world [:steps step key])]))
+  (. js/Diff diffWords
+     (get-in world [:steps previous-step key])
+     (get-in world [:steps step key])))
+
+(defn render-changes [changes key]
+  [:div (map-indexed
+         (fn [i change]
+           [:span (merge {:key (str key i)}
+                         (cond
+                           (. change -added) {:class "added"}
+                           (. change -removed) {:class "removed"}
+                           :else {}))
+            (. change -value)])
+         changes)])
+
+(defn diff [world previous-step step]
+  (let [name-changes (get-changes world previous-step step :name)
+        header-changes (get-changes world previous-step step :header)
+        body-changes (get-changes world previous-step step :body)]
+    [:div
+     [render-changes name-changes :name]
+     [render-changes name-changes :header]
+     [render-changes name-changes :body]]))
+
 (comment
   :totally-new
   :proceeding
@@ -205,7 +234,7 @@
          "Here is your first response"
          [pretty @world first-response]
          "Here is your partner's revised initiation"
-         [pretty @world final-initiation]
+         [diff @world first-initiation final-initiation]
          [:div.form
           [form world]]]
         (= (:current-step @world) last-step)
