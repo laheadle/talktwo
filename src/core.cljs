@@ -25,6 +25,9 @@
      :elements {}
      :current-step current-step
      :steps steps
+     :max {:name 80
+                 :header 80
+                 :body 400}
      :errors {:name "I failed"
               :header "I failed"
               :body "I failed"}}))
@@ -104,9 +107,15 @@
 (defn get-input [world key]
   (get-in world [:steps (:current-step world) key]))
 
+(defn remaining [world key]
+  (let [input-value (get-input world key)
+        max (get-in world [:max key])]
+    [:div (str "Max Characters Remaining: " (- max (. input-value -length)))]))
+
 (defn body [world]
   [:div
    (error world :body)
+   (remaining @world :body)
    [:textarea {:on-focus #(focus-body! world %)
                :on-blur #(blur! world)
                :value (get-input @world :body)
@@ -115,6 +124,7 @@
 (defn header [world]
   [:div
    (error world :header)
+   (remaining @world :header)
    [:input {:on-focus #(focus-header! world %)
             :on-blur #(blur! world)
             :value (get-input @world :header)
@@ -123,6 +133,7 @@
 (defn name [world]
   [:div
    (error world :name)
+   (remaining @world :name)
    [:input {:on-focus #(focus-name! world %)
             :on-blur #(blur! world)
             :value (get-input @world :name)
