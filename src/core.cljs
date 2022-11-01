@@ -8,14 +8,14 @@
 
 
 
-(defn init []
+(defn init [steps]
   {:state {:form-fields :not-focused
            :step :initiator-first}
    :elements {}
    :current-step 0
-   :steps [{:name "a"
-            :header "b"
-            :body "bc"}]
+   :steps (or steps [{:name "a"
+                      :header "b"
+                      :body "bc"}])
    :errors {:name "I failed"
             :header "I failed"
             :body "I failed"}})
@@ -38,13 +38,14 @@
 (defn read-url []
   (let [search (.. js/window -location -search)
         compressed (when (and search (> (. search -length) 0))
-                      (. search substring 3))
-        decompressed (and compressed (. js/LZString decompressFromEncodedURIComponent compressed))]
-    (prn (if decompressed
-           (read-string decompressed)
-           "no url"))))
+                     (. search substring 3))
+        decompressed (and compressed (. js/LZString decompressFromEncodedURIComponent compressed))
+        result (when decompressed
+                 (read-string decompressed))]
+    (prn (str "url " result))
+    result))
 
-(defn write-url [state]
+(defn create-next-URL [state]
   (str (.. js/window -location -protocol)
        "//"
        (.. js/window -location -host)
@@ -121,14 +122,15 @@
   [:form
    {:on-submit (fn [e]
                  (. e preventDefault)
-                 (.. js/navigator -clipboard (writeText "that really worked")))}
+                 (.. js/navigator -clipboard
+                     (writeText (create-next-URL (get @world :steps)))))}
    [name world]
    [header world]
    [body world]
    [:button {:type :submit} "nextt"]])
 
 (defn home []
-  (let [world (r/atom (init))]
+  (let [world (r/atom (init (read-url)))]
     (fn []
       [:div.dialog
        [:div.form
