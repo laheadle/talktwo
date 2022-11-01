@@ -22,6 +22,7 @@
       [:script {:crossorigin nil :src "https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"}]
       [:script {:src "https://cdn.jsdelivr.net/gh/borkdude/scittle@0.0.1/js/scittle.js" :type "application/javascript"}]
       [:script {:src "https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js" :type "application/javascript"}]
+      [:script {:src "https://cdnjs.cloudflare.com/ajax/libs/jsdiff/4.0.2/diff.min.js" :type "application/javascript"}]
       [:script {:src "https://cdn.jsdelivr.net/gh/borkdude/scittle@0.0.1/js/scittle.reagent.js" :type "application/javascript"}]
       [:script {:src "https://cdn.jsdelivr.net/gh/borkdude/scittle@0.0.1/js/scittle.cljs-ajax.js" :type "application/javascript"}]
       [:title "Guestbook"]]

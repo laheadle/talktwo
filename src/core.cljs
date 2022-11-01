@@ -7,18 +7,27 @@
             ))
 
 
+(def first-step 0)
+(def last-step 4)
 
 (defn init [steps]
-  {:state {:form-fields :not-focused
-           :step :initiator-first}
-   :elements {}
-   :current-step 0
-   :steps (or steps [{:name "a"
-                      :header "b"
-                      :body "bc"}])
-   :errors {:name "I failed"
-            :header "I failed"
-            :body "I failed"}})
+  (let [current-step (if steps (count steps) first-step)
+        steps (if (= current-step last-step)
+                steps
+                (conj (or steps [])
+                      (cond
+                        (<= current-step 1) {:name ""
+                                             :header ""
+                                             :body ""}
+                        :else (get steps (if (= current-step 2) first-step 1)))))]
+    {:state {:form-fields :not-focused
+             :step :initiator-first}
+     :elements {}
+     :current-step current-step
+     :steps steps
+     :errors {:name "I failed"
+              :header "I failed"
+              :body "I failed"}}))
 
 
 ;; this is not really executable
@@ -46,6 +55,7 @@
     result))
 
 (defn create-next-URL [state]
+  (prn (str "encoding: " state))
   (str (.. js/window -location -protocol)
        "//"
        (.. js/window -location -host)
@@ -129,12 +139,24 @@
    [body world]
    [:button {:type :submit} "nextt"]])
 
+(defn done [world]
+  [:div.done
+   [:div (get-in @world [:steps 2 :name])]
+   [:div (get-in @world [:steps 2 :header])]
+   [:div (get-in @world [:steps 2 :body])]
+   [:div (get-in @world [:steps 3 :name])]
+   [:div (get-in @world [:steps 3 :header])]
+   [:div (get-in @world [:steps 3 :body])]])
+
 (defn home []
   (let [world (r/atom (init (read-url)))]
+    (prn (str "initializing: " @world))
     (fn []
       [:div.dialog
-       [:div.form
-        [form world]]])))
+       (if (= (:current-step @world) last-step)
+         [done world]
+         [:div.form
+          [form world]])])))
 
 (prn (:a {:a 1} 2))
 
