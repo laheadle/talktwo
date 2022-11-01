@@ -8,6 +8,8 @@
 
 
 (def first-step 0)
+(def final-initiation 2)
+(def final-response 3)
 (def last-step 4)
 
 (defn init [steps]
@@ -112,6 +114,18 @@
         max (get-in world [:max key])]
     [:div (str "Max Characters Remaining: " (- max (. input-value -length)))]))
 
+(defn pretty [world step]
+  [:div
+   [:div (get-in world [:steps step :name])]
+   [:div (get-in world [:steps step :header])]
+   [:div (get-in world [:steps step :body])]])
+
+(comment
+  :totally-new
+  :proceeding
+  :focused
+  :erroneous
+  )
 (defn body [world]
   [:div
    (error world :body)
@@ -152,12 +166,10 @@
 
 (defn done [world]
   [:div.done
-   [:div (get-in @world [:steps 2 :name])]
-   [:div (get-in @world [:steps 2 :header])]
-   [:div (get-in @world [:steps 2 :body])]
-   [:div (get-in @world [:steps 3 :name])]
-   [:div (get-in @world [:steps 3 :header])]
-   [:div (get-in @world [:steps 3 :body])]])
+   [:div "First move"]
+   (pretty @world final-initiation)
+   [:div "Responding move"]
+   (pretty @world final-response)])
 
 (defn home []
   (let [world (r/atom (init (read-url)))]
