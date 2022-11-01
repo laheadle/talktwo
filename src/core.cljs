@@ -8,7 +8,21 @@
 
 
 
+(defn init []
+  {:state {:form-fields :not-focused
+           :step :initiator-first}
+   :elements {}
+   :current-step 0
+   :steps [{:name "a"
+            :header "b"
+            :body "bc"}]
+   :errors {:name "I failed"
+            :header "I failed"
+            :body "I failed"}})
+
+
 ;; this is not really executable
+
 (def states
   #{[:and :dialog
      #{[:or :form-fields
@@ -39,15 +53,6 @@
        "?q="
        ;; (. js/window encodeURI (pr-str state))
        (. js/LZString compressToEncodedURIComponent (pr-str state))))
-
-(defn init []
-  {:state {:form-fields :not-focused
-           :step :initiator-first}
-   :elements {}
-   :steps []
-   :errors {:name "I failed"
-            :header "I failed"
-            :body "I failed"}})
 
 (defn error [world path]
   [:div.error  
@@ -82,29 +87,45 @@
   (when (in-state world :form-fields :focused)
     (swap! world set-state :form-fields :not-focused)))
 
+(defn set-input [world key event]
+  (assoc-in world [:steps (:current-step world) key] (-> event .-target .-value)))
+
+(defn get-input [world key]
+  (get-in world [:steps (:current-step world) key]))
+
 (defn body [world]
   [:div
    (error world :body)
    [:textarea {:on-focus #(focus-body! world %)
-               :on-blur #(blur! world)}]])
+               :on-blur #(blur! world)
+               :value (get-input @world :body)
+               :on-change #(swap! world set-input :body %)}]])
 
 (defn header [world]
   [:div
    (error world :header)
    [:input {:on-focus #(focus-header! world %)
-            :on-blur #(blur! world)}]])
+            :on-blur #(blur! world)
+            :value (get-input @world :header)
+            :on-change #(swap! world set-input :header %)}]])
 
 (defn name [world]
   [:div
    (error world :name)
    [:input {:on-focus #(focus-name! world %)
-            :on-blur #(blur! world)}]])
+            :on-blur #(blur! world)
+            :value (get-input @world :name)
+            :on-change #(swap! world set-input :name %)}]])
 
 (defn form [world]
   [:form
+   {:on-submit (fn [e]
+                 (. e preventDefault)
+                 (.. js/navigator -clipboard (writeText "that really worked")))}
    [name world]
    [header world]
-   [body world]])
+   [body world]
+   [:button {:type :submit} "nextt"]])
 
 (defn home []
   (let [world (r/atom (init))]
@@ -113,6 +134,8 @@
        [:div.form
         [form world]]])))
 
-(read-url)
-(prn (write-url {:a :b}))
+(prn (:a {:a 1} 2))
+
 (dom/render [home] (.getElementById js/document "content"))
+
+
