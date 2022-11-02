@@ -1,8 +1,41 @@
 
 body {
-margin: 10px 20px;
-font-family: Arial;
+    margin: 30px auto;
+    font-family: Arial;
+    width: 900px;
+    font-size: 20px;
 }
+
+input {
+    height: 25px;
+}
+
+input, textarea {
+    width: 900px;
+    border: 1px solid gray;
+    font-size: 18px;
+    border-radius: 5px;
+    padding: 3px;
+}
+
+#input_button {
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 10px;
+    width: 50%;
+    height: 50px;
+    margin: 0 auto;
+    display: block;
+    background-color: black;
+    border-color: black;
+    cursor: pointer;
+}
+
+#input_button:hover {
+    opacity: 0.9;
+}
+
 * {
 	margin: 10px 0;
 }
@@ -15,11 +48,15 @@ font-family: Arial;
 	text-decoration: line-through;
 }
 
-#message {
+.error {
 	background-color: pink;
+    padding: 0 4px;
+    margin: 0 auto;
 }
 
-input, textarea { width: 400px; }
+#instructions {
+    margin-bottom: 15px;
+}
 
 textarea {
 	height: 220px;

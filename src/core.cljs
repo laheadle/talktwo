@@ -117,11 +117,16 @@
         max (get-in world [:max key])]
     [:div (str "Max Characters Remaining: " (- max (. input-value -length)))]))
 
-(defn pretty [world step]
-  [:div
-   [:div (get-in world [:steps step :name])]
-   [:div (get-in world [:steps step :header])]
-   [:div (get-in world [:steps step :body])]])
+(defn name-text [text]
+  [:span.name text])
+
+(defn pretty [world step label-header]
+  (let [name (get-in world [:steps step :name])]
+    [:div.pretty
+     (label-header name)
+     [:div.quoted
+      [:div (get-in world [:steps step :header])]
+      [:div (get-in world [:steps step :body])]]]))
 
 (defn get-changes [world previous-step step key]
   (prn (str "get-changes: "
@@ -194,14 +199,14 @@
    [name world]
    [header world]
    [body world]
-   [:button {:type :submit} "nextt"]])
+   [:button#input_button {:type :submit} "Next"]])
 
 (defn done [world]
   [:div.done
-   [:div "First move"]
-   (pretty @world final-initiation)
-   [:div "Responding move"]
-   (pretty @world final-response)])
+   (pretty @world final-initiation #(vector :div [name-text %]
+                                            " had the first word:"))
+   (pretty @world final-response
+           #(vector :div [name-text %] " responded:"))])
 
 (defn home []
   (let [world (r/atom (init (read-url)))]
@@ -215,24 +220,24 @@
           [form world]]]
         (= (:current-step @world) first-response)
         [:div.dialog
-         "Here is what the initiator wrote"
-         [pretty @world first-initiation]
+         [pretty @world first-initiation
+          #(vector :div "Here is what the initiator, " [name-text %] ", wrote")]
          [:div.form
           [form world]]]
         (= (:current-step @world) final-initiation)
         [:div.dialog
-         "Here is what you wrote"
-         [pretty @world first-initiation]
-         "Here is your partner's response"
-         [pretty @world first-response]
+         [pretty @world first-initiation
+          #(vector :div "Here is what you wrote, " [name-text %])]
+         [pretty @world first-response
+          #(vector :div "Here is the response of your partner, " [name-text %])]
          [:div.form
           [form world]]]
         (= (:current-step @world) final-response)
         [:div.dialog
-         "Here is what the initiator wrote"
-         [pretty @world first-initiation]
-         "Here is your first response"
-         [pretty @world first-response]
+         [pretty @world first-initiation
+          #(vector :div "Here is what the initiator, " [name-text %] ", wrote")]
+         [pretty @world first-response
+          #(vector :div "Here is your first response, " [name-text %])]
          "Here is your partner's revised initiation"
          [diff @world first-initiation final-initiation]
          [:div.form
