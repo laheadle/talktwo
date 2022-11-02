@@ -139,7 +139,7 @@
     [:div.pretty
      (label-header name)
      [:div.quoted
-      [:div (get-in world [:steps step :header])]
+      [:h1 (get-in world [:steps step :header])]
       [:div (get-in world [:steps step :body])]]]))
 
 (defn get-changes [world previous-step step key]
@@ -236,12 +236,18 @@
           [form world]]]
         (= (:current-step @world) first-response)
         [:div.dialog
+         "This is Talktwo, a dialog maker. Somebody started a dialog
+         with you, and created the draft below. You can read it, and
+         draft a short response. Your partner can revise their draft
+         once, and then you can revise yours. So you get the last
+         word."
          [pretty @world first-initiation
           #(vector :div "Here is what the initiator, " [name-text %] ", wrote")]
          [:div.form
           [form world]]]
         (= (:current-step @world) final-initiation)
         [:div.dialog
+         "Make your revisions, taking into account your partner's response."
          [pretty @world first-initiation
           #(vector :div "Here is what you wrote, " [name-text %])]
          [pretty @world first-response
@@ -250,6 +256,7 @@
           [form world]]]
         (= (:current-step @world) final-response)
         [:div.dialog
+         "Last Step: Your partner is done. Revise your response into your last word."
          [pretty @world first-initiation
           #(vector :div "Here is what the initiator, " [name-text %] ", wrote")]
          [pretty @world first-response
@@ -260,6 +267,7 @@
           [form world]]]
         (= (:current-step @world) last-step)
         [:div.dialog
+         "This is Talktwo, a dialog maker. Here is a dialog. You can share the url."
          [done world]]))))
 
 (prn (:a {:a 1} 2))

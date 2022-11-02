@@ -26,7 +26,7 @@
       [:script {:src "https://cdnjs.cloudflare.com/ajax/libs/jsdiff/4.0.2/diff.min.js" :type "application/javascript"}]
       [:script {:src "https://cdn.jsdelivr.net/gh/borkdude/scittle@0.0.1/js/scittle.reagent.js" :type "application/javascript"}]
       [:script {:src "https://cdn.jsdelivr.net/gh/borkdude/scittle@0.0.1/js/scittle.cljs-ajax.js" :type "application/javascript"}]
-      [:title "Guestbook"]]
+      [:title "Talktwo: A Dialog Maker"]]
      [:body
       [:div {:id "content"}]
       [:script {:type "application/x-scittle" :src cljs-file}]]]))
