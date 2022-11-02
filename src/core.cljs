@@ -168,8 +168,8 @@
         body-changes (get-changes world previous-step step :body)]
     [:div
      [render-changes name-changes :name]
-     [render-changes name-changes :header]
-     [render-changes name-changes :body]]))
+     [render-changes header-changes :header]
+     [render-changes body-changes :body]]))
 
 (comment
   :totally-new
