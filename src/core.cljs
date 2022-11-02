@@ -31,11 +31,8 @@
      :current-step current-step
      :steps steps
      :max {:name 80
-                 :header 80
-                 :body 400}
-     :errors {:name ""
-              :header ""
-              :body ""}}))
+           :header 80
+           :body 600}}))
 
 
 ;; this is not really executable
@@ -73,10 +70,6 @@
        ;; (. js/window encodeURI (pr-str state))
        (. js/LZString compressToEncodedURIComponent (pr-str state))))
 
-(defn error [world path]
-  [:div.error  
-   (get-in @world [:errors path])])
-
 (defn in-state [world outer inner]
   (let [current-state (get-in world [:state outer])]
     (cond (#{:focused} inner) (focused-states current-state)
@@ -90,6 +83,10 @@
   (when (in-state @world :form-fields :not-focused)
     (swap! world set-state :form-fields :name-focused)))
 
+(defn focus-body! [world event]
+  (when (in-state @world :form-fields :not-focused)
+    (swap! world set-state :form-fields :body-focused)))
+
 (defn set-element [old outer inner]
   (assoc-in old [:elements outer] inner))
 
@@ -98,19 +95,31 @@
   (when (in-state @world :form-fields :not-focused)
     (swap! world set-state :form-fields :header-focused)))
 
-(defn focus-body! [world event]
-  (when (in-state @world :form-fields :not-focused)
-    (swap! world set-state :form-fields :body-focused)))
+(defn set-input [world key event]
+  (assoc-in world [:steps (:current-step world) key] (-> event .-target .-value)))
 
 (defn blur! [world]
   (when (in-state @world :form-fields :focused)
     (swap! world set-state :form-fields :not-focused)))
 
-(defn set-input [world key event]
-  (assoc-in world [:steps (:current-step world) key] (-> event .-target .-value)))
-
 (defn get-input [world key]
   (get-in world [:steps (:current-step world) key]))
+
+(defn empty? [str]
+  (or (not str)
+      (= (. str -length) 0)))
+
+(defn pending-item [text]
+  [:div.pending-item text])
+
+(defn pending [world]
+  [:div.pending
+   (seq [(when (empty? (get-input world :name))
+           [pending-item "Give yourself a name"])
+         (when (empty? (get-input world :header))
+           [pending-item "Add a header"])
+         (when (empty? (get-input world :body))
+           [pending-item "Add a body"])])])
 
 (defn remaining [world key]
   (let [input-value (get-input world key)
@@ -179,7 +188,6 @@
   )
 (defn body [world]
   [:div
-   [error world :body]
    [remaining @world :body]
    [:textarea {:on-focus #(focus-body! world %)
                :on-blur #(blur! world)
@@ -188,7 +196,6 @@
 
 (defn header [world]
   [:div
-   [error world :header]
    [remaining @world :header]
    [:input {:on-focus #(focus-header! world %)
             :on-blur #(blur! world)
@@ -197,7 +204,6 @@
 
 (defn name [world]
   [:div
-   [error world :name]
    [remaining @world :name]
    [:input {:on-focus #(focus-name! world %)
             :on-blur #(blur! world)
@@ -209,10 +215,12 @@
    {:on-submit (fn [e]
                  (. e preventDefault)
                  (.. js/navigator -clipboard
-                     (writeText (create-next-URL (get @world :steps)))))}
+                     (writeText (create-next-URL (get @world
+                                                      :steps)))))}
    [name world]
    [header world]
    [body world]
+   [pending @world]
    [:button#input_button {:type :submit} "Next"]])
 
 (defn done [world]
@@ -269,8 +277,6 @@
         [:div.dialog
          "This is Talktwo, a dialog maker. Here is a dialog. You can share the url."
          [done world]]))))
-
-(prn (:a {:a 1} 2))
 
 (dom/render [home] (.getElementById js/document "content"))
 
