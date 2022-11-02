@@ -33,9 +33,9 @@
      :max {:name 80
                  :header 80
                  :body 400}
-     :errors {:name "I failed"
-              :header "I failed"
-              :body "I failed"}}))
+     :errors {:name ""
+              :header ""
+              :body ""}}))
 
 
 ;; this is not really executable
@@ -78,7 +78,7 @@
    (get-in @world [:errors path])])
 
 (defn in-state [world outer inner]
-  (let [current-state (get-in @world [:state outer])]
+  (let [current-state (get-in world [:state outer])]
     (cond (#{:focused} inner) (focused-states current-state)
           :else (= current-state inner))))
 
@@ -87,7 +87,7 @@
   (assoc-in old [:state outer] inner))
 
 (defn focus-name! [world event]
-  (when (in-state world :form-fields :not-focused)
+  (when (in-state @world :form-fields :not-focused)
     (swap! world set-state :form-fields :name-focused)))
 
 (defn set-element [old outer inner]
@@ -95,15 +95,15 @@
 
 (defn focus-header! [world event]
   (. js/console log "abct")
-  (when (in-state world :form-fields :not-focused)
+  (when (in-state @world :form-fields :not-focused)
     (swap! world set-state :form-fields :header-focused)))
 
 (defn focus-body! [world event]
-  (when (in-state world :form-fields :not-focused)
+  (when (in-state @world :form-fields :not-focused)
     (swap! world set-state :form-fields :body-focused)))
 
 (defn blur! [world]
-  (when (in-state world :form-fields :focused)
+  (when (in-state @world :form-fields :focused)
     (swap! world set-state :form-fields :not-focused)))
 
 (defn set-input [world key event]
@@ -114,8 +114,22 @@
 
 (defn remaining [world key]
   (let [input-value (get-input world key)
+        label (case key
+                :body "Body"
+                :header "Header"
+                :name "What do we call you?")
+        focused (in-state world :form-fields (case key
+                                               :body :body-focused
+                                               :header :header-focused
+                                               :name :name-focused))
         max (get-in world [:max key])]
-    [:div (str "Max Characters Remaining: " (- max (. input-value -length)))]))
+    [:div
+     [:span label]
+     (when focused
+       [:span (str " (Max Characters Remaining: "
+                   (- max
+                      (. input-value -length))
+                   ")")])]))
 
 (defn name-text [text]
   [:span.name text])
@@ -165,8 +179,8 @@
   )
 (defn body [world]
   [:div
-   (error world :body)
-   (remaining @world :body)
+   [error world :body]
+   [remaining @world :body]
    [:textarea {:on-focus #(focus-body! world %)
                :on-blur #(blur! world)
                :value (get-input @world :body)
@@ -174,8 +188,8 @@
 
 (defn header [world]
   [:div
-   (error world :header)
-   (remaining @world :header)
+   [error world :header]
+   [remaining @world :header]
    [:input {:on-focus #(focus-header! world %)
             :on-blur #(blur! world)
             :value (get-input @world :header)
@@ -183,8 +197,8 @@
 
 (defn name [world]
   [:div
-   (error world :name)
-   (remaining @world :name)
+   [error world :name]
+   [remaining @world :name]
    [:input {:on-focus #(focus-name! world %)
             :on-blur #(blur! world)
             :value (get-input @world :name)
@@ -215,7 +229,9 @@
       (cond
         (= (:current-step @world) first-initiation)
         [:div.dialog
-         "Enter your first stuff here"
+         "This is Talktwo, a dialog maker. You have the first
+         word. Draft a header and a body. You can revise them once,
+         after your partner responds."
          [:div.form
           [form world]]]
         (= (:current-step @world) first-response)
