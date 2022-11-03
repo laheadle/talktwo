@@ -112,14 +112,21 @@
 (defn pending-item [text]
   [:div.pending-item text])
 
+(defn pending-items [world]
+  (cond-> []
+    (empty? (get-input world :name))
+    (conj "Give yourself a name")
+    (empty? (get-input world :header))
+    (conj "Give yourself a header")
+    (empty? (get-input world :body))
+    (conj "Give yourself a body")))
+
 (defn pending [world]
-  [:div.pending
-   (seq [(when (empty? (get-input world :name))
-           [pending-item "Give yourself a name"])
-         (when (empty? (get-input world :header))
-           [pending-item "Add a header"])
-         (when (empty? (get-input world :body))
-           [pending-item "Add a body"])])])
+  [:ol.pending
+   (map
+    (fn [item]
+      [:li.pending-item {:key (hash item)} item])
+    (pending-items world))])
 
 (defn remaining [world key]
   (let [input-value (get-input world key)
