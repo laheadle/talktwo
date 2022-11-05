@@ -10,24 +10,30 @@
                   steps []}}]
   {:self self
    :steps steps
-   :situation (if (#{:audience} self)
-                :done
-                (if (< (count steps) 3)
-                  (count steps)
-                  [3 self (if (= (get steps 0)
-                                 (get steps 2))
-                            :steady
-                            :changed)]))
+   :situation (if (< (count steps) 3)
+                (count steps)
+                [3 self (if (= (get steps 0)
+                               (get steps 2))
+                          :steady
+                          :changed)])
    :current-step (if (< (count steps) 2)
                    {:name ""
                     :body ""}
                    (get steps 1))
-   :state {:form-fields :not-focused}
+   :state {:dialog-state
+           (if (#{:audience} self)
+             :viewing
+             :not-focused)}
    :max {:name 80
          :body 600}})
 
 
 (def focused-states #{:name-focused :body-focused})
+(def revising-states (clojure.set/union focused-states #{:not-focused}))
+
+(defn empty? [str]
+  (or (not str)
+      (= str "")))
 
 (defn read-url []
   (let [search (.. js/window -location -search)
@@ -53,6 +59,7 @@
 (defn in-state [world outer inner]
   (let [current-state (get-in world [:state outer])]
     (cond (#{:focused} inner) (focused-states current-state)
+          (#{:revising} inner) (revising-states current-state)
           :else (= current-state inner))))
 
 (defn set-state [old outer inner]
@@ -60,28 +67,24 @@
   (assoc-in old [:state outer] inner))
 
 (defn focus-name! [world event]
-  (when (in-state @world :form-fields :not-focused)
-    (swap! world set-state :form-fields :name-focused)))
+  (when (in-state @world :dialog-state :not-focused)
+    (swap! world set-state :dialog-state :name-focused)))
 
 (defn focus-body! [world event]
-  (when (in-state @world :form-fields :not-focused)
-    (swap! world set-state :form-fields :body-focused)))
+  (when (in-state @world :dialog-state :not-focused)
+    (swap! world set-state :dialog-state :body-focused)))
 
 (defn set-input [world key event]
   (prn (assoc-in world [:current-step key] (-> event .-target .-value)))
   (assoc-in world [:current-step key] (-> event .-target .-value)))
 
 (defn blur! [world]
-  (when (in-state @world :form-fields :focused)
-    (swap! world set-state :form-fields :not-focused)))
+  (when (in-state @world :dialog-state :focused)
+    (swap! world set-state :dialog-state :not-focused)))
 
 (defn get-input [world key]
   ;; (prn (get-in world [:current-step key]))
   (get-in world [:current-step key]))
-
-(defn empty? [str]
-  (or (not str)
-      (= (. str -length) 0)))
 
 (defn pending-item [text]
   [:div.pending-item text])
@@ -105,7 +108,7 @@
         label (case key
                 :body "Body"
                 :name "What do we call you?")
-        focused (in-state world :form-fields (case key
+        focused (in-state world :dialog-state (case key
                                                :body :body-focused
                                                :name :name-focused))
         max (get-in world [:max key])]
@@ -121,11 +124,18 @@
   [:span.name text])
 
 (defn pretty [world step label-header]
-  (let [name (get-in world [:steps step :name])]
+  (let [name (get-in world [:steps step :name])
+        body (get-in world [:steps step :body])
+        name (if (empty? name)
+               "(no name yet)"
+               name)
+        body (if (empty? body)
+               "(no text yet)"
+               body)]
     [:div.pretty
      (label-header name)
      [:div.quoted
-      [:div (get-in world [:steps step :body])]]]))
+      [:div body]]]))
 
 (defn get-changes [world previous-step step key]
   (prn (str "get-changes: "
@@ -177,17 +187,20 @@
 (defn self-is-steady [world]
   (= (:current-step world) (second (:steps world))))
 
-(defn next-URL [world]
+(defn finalize-world [world]
+  "Produce the final pair of steps: [starter finisher]"
+  {:self :audience
+   :steps
+   (if (= :starter (:self world))
+     [(:current-step world) (first (:steps world))]
+     [(first (:steps world)) (:current-step world)])})
+
+(defn next-world [world]
   "Transform the current world into the next turn state"
   (if (and (partner-is-steady world)
            (self-is-steady world))
     ;; ok, we are finished.
-    ;; produce the final pair of steps: [starter finisher]
-    {:self :audience
-     :steps
-     (if (= :starter (:self world))
-       [(:current-step world) (first (:steps world))]
-       [(first (:steps world)) (:current-step world)])}
+    (finalize-world world)
     ;; Invite the partner to continue revising
     {:self (if (= :starter (:self world))
              :finisher
@@ -197,33 +210,41 @@
                   (take 3)
                   vec)}))
 
-(defn submit []
-  [:button#input_button {:type :submit} "Next"])
+(defn submit [text]
+  [:button#input_button {:type :submit} text])
 
 (defn form! [world]
   [:form
    {:on-submit (fn [e]
                  (. e preventDefault)
                  (.. js/navigator -clipboard
-                     (writeText (create-URL (next-URL @world)))))}
+                     (writeText (create-URL (next-world @world))))
+                 (swap! world set-state :dialog-state :previewing))}
    [name! world]
    [body! world]
    [pending @world]
-   [submit]])
+   [submit "Preview This Dialogue"]])
 
 (defn done [world]
   [:div.done
-   (pretty @world 0  #(vector :div [name-text %]))
-   (pretty @world 1 #(vector :div [name-text %]))])
+   (pretty world 0  #(vector :div [name-text %]))
+   (pretty world 1 #(vector :div [name-text %]))])
 
+(defn preview! [world]
+  [:form
+   {:on-submit (fn [e]
+                 (. e preventDefault)
+                 (swap! world set-state :dialog-state :not-focused))}
+   "Are you done with your edits? "
+   [:a {:target "_blank"
+        :href (create-URL (next-world @world))} "This link"]
+   " is copied to your clipboard. Send it to your partner!"
+   [:div "Here is how your dialog currently appears:"]
+   [done (finalize-world @world)]
+   [submit "Hide Preview"]])
 
-(defn preview [world] "preview")
-
-(defn home []
-  (let [world (r/atom (init (read-url)))]
-    (prn (str "initializing: " @world))
-    (fn []
-      (case (:situation @world)
+(defn revise! [world]
+  (case (:situation @world)
         0
         [:div.dialog
          "This is Talktwo, a dialog maker. Whip up a first draft, for your partner's eyes only."
@@ -236,45 +257,47 @@
          revise it, share it, or dump it."
          [pretty @world 0
           #(vector :div "Here is what the starter, " [name-text %] ", wrote")]
-         [form! world]
-         [preview @world]]
+         [form! world]]
         2
         [:div.dialog
          "Make your revisions, taking into account the finisher's rough response."
          [pretty @world 0 
           #(vector :div [name-text %])]
-         [form! world]
-         [preview @world]] 
+         [form! world]] 
         [3 :finisher :changed]
         [:div.dialog*
          "The starter made changes. You should probably make some
          too. Keep revising the dialog until you want to stop."
          [diff @world 2 0] ;; from to
-         [form! world]
-         [preview @world]]
+         [form! world]]
         [3 :starter :changed]
         [:div.dialog
          "The finisher made changes. You should probably make some
          too. Keep revising the dialog until you want to stop."
          [diff @world 2 0] ;; from to
-         [form! world]
-         [preview @world]]
+         [form! world]]
         [3 :finisher :steady]
         [:div.dialog
          "The starter is holding steady with no changes. If you do the same, the dialog is complete."
          [diff @world 2 0]
-         [form! world]
-         [preview @world]]
+         [form! world]]
         [3 :starter :steady]
         [:div.dialog
          "The finisher is holding steady with no changes. If you do the same, the dialog is complete."
          [diff @world 2 0]
-         [form! world]
-         [preview @world]]
-        :done
+         [form! world]]))
+
+(defn home []
+  (let [world (r/atom (init (read-url)))]
+    (prn (str "initializing: " @world))
+    (fn []
+      (cond
+        (in-state @world :dialog-state :revising) (revise! world)
+        (in-state @world :dialog-state :previewing) (preview! world)
+        (in-state @world :dialog-state :viewing)
         [:div.dialog
          "This is Talktwo, a dialog maker. Here is a dialog. You can share the url."
-         [done world]]))))
+         [done @world]]))))
 
 (dom/render [home] (.getElementById js/document "content"))
 
