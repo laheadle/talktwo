@@ -154,7 +154,7 @@
      [render-changes name-changes :name]
      [render-changes body-changes :body]]))
 
-(defn body [world]
+(defn body! [world]
   [:div
    [remaining @world :body]
    [:textarea {:on-focus #(focus-body! world %)
@@ -162,7 +162,7 @@
                :value (get-input @world :body)
                :on-change #(swap! world set-input :body %)}]])
 
-(defn name [world]
+(defn name! [world]
   [:div
    [remaining @world :name]
    [:input {:on-focus #(focus-name! world %)
@@ -170,16 +170,25 @@
             :value (get-input @world :name)
             :on-change #(swap! world set-input :name %)}]])
 
+(defn partner-is-steady [world]
+  (= (get (:situation world) 2)
+     :steady))
+
+(defn self-is-steady [world]
+  (= (:current-step world) (second (:steps world))))
+
 (defn next-URL [world]
-  (if (and (= (get (:situation world) 2)
-              :steady)
-           (= (:current-step world) (second (:steps world))))
+  "Transform the current world into the next turn state"
+  (if (and (partner-is-steady world)
+           (self-is-steady world))
+    ;; ok, we are finished.
+    ;; produce the final pair of steps: [starter finisher]
     {:self :audience
      :steps
-     ;; [starter finisher]
      (if (= :starter (:self world))
        [(:current-step world) (first (:steps world))]
        [(first (:steps world)) (:current-step world)])}
+    ;; Invite the partner to continue revising
     {:self (if (= :starter (:self world))
              :finisher
              :starter)
@@ -197,8 +206,8 @@
                  (. e preventDefault)
                  (.. js/navigator -clipboard
                      (writeText (create-URL (next-URL @world)))))}
-   [name world]
-   [body world]
+   [name! world]
+   [body! world]
    [pending @world]
    [submit]])
 
