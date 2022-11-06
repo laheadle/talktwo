@@ -36,6 +36,11 @@ input, textarea {
     opacity: 0.9;
 }
 
+#input_button[disabled] {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 * {
 	margin: 10px 0;
 }

@@ -83,18 +83,27 @@
     (swap! world set-state :dialog-state :not-focused)))
 
 (defn get-input [world key]
-  ;; (prn (get-in world [:current-step key]))
+  (prn (get-in world [:current-step key])
+       [:current-step key])
   (get-in world [:current-step key]))
 
 (defn pending-item [text]
   [:div.pending-item text])
+
+(defn too-long? [world key]
+  (< (get-in world [:max key])
+     (.-length (get-input world key))))
 
 (defn pending-items [world]
   (cond-> []
     (empty? (get-input world :name))
     (conj "Give yourself a name")
     (empty? (get-input world :body))
-    (conj "Give yourself a body")))
+    (conj "Give yourself a body")
+    (too-long? world :name)
+    (conj "Shrink your name - it is too big")
+    (too-long? world :body)
+    (conj "Shrink your body - it is too big")))
 
 (defn pending [world]
   [:ol.pending
@@ -210,8 +219,9 @@
                   (take 3)
                   vec)}))
 
-(defn submit [text]
-  [:button#input_button {:type :submit} text])
+(defn submit [text disable]
+  [:button#input_button {:type :submit
+                         :disabled disable} text])
 
 (defn form! [world]
   [:form
@@ -223,7 +233,8 @@
    [name! world]
    [body! world]
    [pending @world]
-   [submit "Preview This Dialogue"]])
+   [submit "Preview This Dialogue" (boolean (< 0
+                                               (count (pending-items @world))))]])
 
 (defn done [world]
   [:div.done
@@ -241,7 +252,7 @@
    " is copied to your clipboard. Send it to your partner!"
    [:div "Here is how your dialog currently appears:"]
    [done (finalize-world @world)]
-   [submit "Hide Preview"]])
+   [submit "Hide Preview" false]])
 
 (defn revise! [world]
   (case (:situation @world)
