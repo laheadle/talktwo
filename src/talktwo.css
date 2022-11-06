@@ -1,5 +1,5 @@
 
-body {
+#content {
     margin: 30px auto;
     font-family: Arial;
     width: 900px;
@@ -80,7 +80,7 @@ h1 {
 	font-size: 1.3em;
 }
 
-.quoted {
+.body {
 	border-left: 4px solid gray;
 	padding: 10px 20px;
 }

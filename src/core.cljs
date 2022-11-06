@@ -132,6 +132,9 @@
 (defn name-text [text]
   [:span.name text])
 
+(defn body-text [body]
+  [:div.body body])
+
 (defn pretty [world step label-header]
   (let [name (get-in world [:steps step :name])
         body (get-in world [:steps step :body])
@@ -143,8 +146,7 @@
                body)]
     [:div.pretty
      (label-header name)
-     [:div.quoted
-      [:div body]]]))
+     [body-text body]]))
 
 (defn get-changes [world previous-step step key]
   (prn (str "get-changes: "
@@ -155,23 +157,23 @@
      (get-in world [:steps previous-step key])
      (get-in world [:steps step key])))
 
-(defn render-changes [changes key]
-  [:div (map-indexed
-         (fn [i change]
-           [:span (merge {:key (str key i)}
-                         (cond
-                           (. change -added) {:class "added"}
-                           (. change -removed) {:class "removed"}
-                           :else {}))
-            (. change -value)])
-         changes)])
+(defn revision-changes [changes key]
+  (map-indexed
+   (fn [i change]
+     [:span.word (merge {:key (str key i)}
+                        (cond
+                          (. change -added) {:class "added"}
+                          (. change -removed) {:class "removed"}
+                          :else {}))
+      (. change -value)])
+   changes))
 
 (defn diff [world previous-step step]
   (let [name-changes (get-changes world previous-step step :name)
         body-changes (get-changes world previous-step step :body)]
     [:div
-     [render-changes name-changes :name]
-     [render-changes body-changes :body]]))
+     [name-text (revision-changes name-changes :name)]
+     [body-text (revision-changes body-changes :body)]]))
 
 (defn body! [world]
   [:div
@@ -204,10 +206,13 @@
      [(:current-step world) (first (:steps world))]
      [(first (:steps world)) (:current-step world)])})
 
+(defn dialog-is-complete [world]
+  (and (partner-is-steady world)
+       (self-is-steady world)))
+
 (defn next-world [world]
   "Transform the current world into the next turn state"
-  (if (and (partner-is-steady world)
-           (self-is-steady world))
+  (if (dialog-is-complete world)
     ;; ok, we are finished.
     (finalize-world world)
     ;; Invite the partner to continue revising
@@ -233,8 +238,8 @@
    [name! world]
    [body! world]
    [pending @world]
-   [submit "Preview This Dialogue" (boolean (< 0
-                                               (count (pending-items @world))))]])
+   [submit "Preview" (boolean (< 0
+                                 (count (pending-items @world))))]])
 
 (defn done [world]
   [:div.done
@@ -246,11 +251,28 @@
    {:on-submit (fn [e]
                  (. e preventDefault)
                  (swap! world set-state :dialog-state :not-focused))}
-   "Are you done with your edits? "
-   [:a {:target "_blank"
-        :href (create-URL (next-world @world))} "This link"]
-   " is copied to your clipboard. Send it to your partner!"
-   [:div "Here is how your dialog currently appears:"]
+   [:div.current-turn-status
+    (if (self-is-steady @world)
+      (if (dialog-is-complete @world)
+        "You are ready to complete the dialogue."
+        "You are holding steady with no changes, so your partner can
+  complete the dialog.")
+      "You have made changes, so you will get another turn after your
+  partner's.")]
+   [:div.call-to-send
+    (if (dialog-is-complete @world)
+      "Is the dialog complete? A link to it is copied to your
+  clipboard. Send it to your partner!"
+      "Are you done with your turn? A link to your partner's next turn is copied to your
+  clipboard. Send it to your partner!")]
+   [:div.see-next-turn
+    "(Click to see "
+    [:a {:target "_blank"
+         :href (create-URL (next-world @world))}
+     (if (dialog-is-complete @world)
+       "the final dialog"
+       "your partner's next turn")] ".)"]
+   [:div.introduce-preview "Here is how the dialog currently looks:"]
    [done (finalize-world @world)]
    [submit "Hide Preview" false]])
 
