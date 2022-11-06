@@ -36,9 +36,10 @@
       (= str "")))
 
 (defn read-url []
-  (let [search (.. js/window -location -search)
-        compressed (when (and search (> (. search -length) 0))
-                     (. search substring 3))
+  (let [payload (.. js/window -location -hash)
+        ;; _ (prn "pay" payload)
+        compressed (when (and payload (> (. payload -length) 0))
+                     (. payload substring 3))
         decompressed (and compressed (. js/LZString decompressFromEncodedURIComponent compressed))
         result (when decompressed
                  (read-string decompressed))]
@@ -52,7 +53,8 @@
        (.. js/window -location -host)
        ;; "/"
        (.. js/window -location -pathname)
-       "?q="
+       "#"
+       "00"
        ;; (. js/window encodeURI (pr-str state))
        (. js/LZString compressToEncodedURIComponent (pr-str state))))
 
