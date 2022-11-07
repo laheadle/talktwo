@@ -162,7 +162,7 @@
             [world previous-step step key
              (get-in world [:steps previous-step key])
              (get-in world [:steps step key])]))
-  (. js/Diff diffWords
+  (. js/Diff diffSentences
      (get-in world [:steps previous-step key])
      (get-in world [:steps step key])))
 
