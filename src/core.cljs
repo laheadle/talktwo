@@ -270,10 +270,7 @@
    [pretty world 1 #(vector :div [name-text %])]])
 
 (defn preview! [world]
-  [:form
-   {:on-submit (fn [e]
-                 (. e preventDefault)
-                 (swap! world set-state :dialog-state :not-focused))}
+  [:div.app-body
    [:div.current-turn-status
     (if (self-is-steady @world)
       (if (dialog-is-complete @world)
@@ -297,7 +294,11 @@
        "your partner's next turn")] ".)"]
    [:div.introduce-preview "Here is how the dialog currently looks:"]
    [done (finalize-world @world)]
-   [submit "Hide Preview" false]])
+   [:form
+    {:on-submit (fn [e]
+                  (. e preventDefault)
+                  (swap! world set-state :dialog-state :not-focused))}
+    [submit "Hide Preview" false]]])
 
 (defn top-of-dialog [text]
   [:div.top-of-dialog text])
@@ -305,11 +306,11 @@
 (defn revise! [world]
   (case (:situation @world)
     0
-    [:div.dialog
+    [:div.app-body
      [top-of-dialog "This is Talktwo, a dialog maker. Whip up a first draft, for your partner's eyes only."]
      [form! world]]
     1
-    [:div.dialog
+    [:div.app-body
      [top-of-dialog [:span "Heads up! You're in a dialog started by "
                      [name-text (get-in @world [:steps 0 :name])]
                      ". To keep the ball rolling, whip up a rough
@@ -319,30 +320,30 @@
       #(vector :div "Here is what the starter, " [name-text %] ", wrote:")]
      [form! world]]
     2
-    [:div.dialog
+    [:div.app-body
      [top-of-dialog "Make your revisions, taking into account the finisher's rough response."]
      [pretty @world 0 
       #(vector :div [name-text %])]
      [form! world]] 
     [3 :finisher :changed]
-    [:div.dialog
+    [:div.app-body
      [top-of-dialog "The starter made changes. You should probably make some
          too. Keep revising the dialog until you want to stop."]
      [diff @world 2 0] ;; from to
      [form! world]]
     [3 :starter :changed]
-    [:div.dialog
+    [:div.app-body
      [top-of-dialog "The finisher made changes. You should probably make some
          too. Keep revising the dialog until you want to stop."]
      [diff @world 2 0] ;; from to
      [form! world]]
     [3 :finisher :steady]
-    [:div.dialog
+    [:div.app-body
      [top-of-dialog "The starter is holding steady with no changes. If you do the same, the dialog is complete."]
      [diff @world 2 0]
      [form! world]]
     [3 :starter :steady]
-    [:div.dialog
+    [:div.app-body
      [top-of-dialog "The finisher is holding steady with no changes. If you do the same, the dialog is complete."]
      [diff @world 2 0]
      [form! world]]))
@@ -371,7 +372,7 @@
          (in-state @world :dialog-state :revising) (revise! world)
          (in-state @world :dialog-state :previewing) (preview! world)
          (in-state @world :dialog-state :viewing)
-         [:div.dialog
+         [:div.app-body
           "This is Talktwo, a dialog maker. Here is a dialog. You can share the url."
           [done @world]])])))
 

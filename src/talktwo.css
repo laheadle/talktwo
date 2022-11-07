@@ -2,12 +2,12 @@
     margin-bottom: 15px;
 }
 
-.dialog * {
+.app-body * {
     margin-bottom: 15px;
 }
 
 
-#content {
+.app {
     margin: 30px auto;
     font-family: Arial;
     width: 95%;
@@ -24,7 +24,7 @@
 .slogan {
 }
 
-.dialog {
+.app-body {
     width: 97.5%;
     margin: 0 auto;
 }
