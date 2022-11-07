@@ -68,6 +68,9 @@
   (. js/console log (str [:to outer inner]))
   (assoc-in old [:state outer] inner))
 
+(defn set-state! [world outer inner]
+  (swap! world set-state outer inner))
+
 (defn focus-name! [world event]
   (when (in-state @world :dialog-state :not-focused)
     (swap! world set-state :dialog-state :name-focused)))
@@ -349,8 +352,13 @@
      [form! world]]))
 
 (defn logo! [world]
-  [:span {:style {:display "inline-block" :border "4px solid pink"
-                  :margin-right 5}}
+  [:a {:on-click (fn [e]
+                   (set-state! world
+                    :previous-dialog-state
+                    (get-in @world [:state :dialog-state]))
+                   (set-state! world :dialog-state :about))
+       :style {:display "inline-block" :border "4px solid pink"
+               :margin-right 5}}
    [:span {:style {:display "inline-block" :border "4px solid aqua"}}
     [:span.logo-text {:style {:display "inline-block" :padding "4px 6px"}} "T / t"]]])
 
@@ -363,13 +371,23 @@
     [slogan! world]]
    screen])
 
+(defn about! [world]
+  [:form {:on-submit
+         (fn [e] (. e preventDefault)
+           (set-state! world :dialog-state
+                       (get-in @world [:state
+                                       :previous-dialog-state])))}
+   "About"
+   [submit "Hide" false]])
+
 (defn home []
   (let [world (r/atom (init (read-url)))]
     (prn (str "initializing: " @world))
     (fn []
-      [app! @world
+      [app! world
        (cond
          (in-state @world :dialog-state :revising) (revise! world)
+         (in-state @world :dialog-state :about) (about! world)
          (in-state @world :dialog-state :previewing) (preview! world)
          (in-state @world :dialog-state :viewing)
          [:div.app-body
