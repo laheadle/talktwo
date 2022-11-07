@@ -1,9 +1,32 @@
+.app-header, .top-of-dialog {
+    margin-bottom: 15px;
+}
+
+.dialog * {
+    margin-bottom: 15px;
+}
+
 
 #content {
     margin: 30px auto;
     font-family: Arial;
-    width: 900px;
+    width: 95%;
     font-size: 20px;
+}
+
+.app-header {
+    display: flex;
+    align-items: center;
+    padding-bottom: 2px;
+    border-bottom: 1px solid gray;
+}
+
+.slogan {
+}
+
+.dialog {
+    width: 97.5%;
+    margin: 0 auto;
 }
 
 input {
@@ -11,7 +34,7 @@ input {
 }
 
 input, textarea {
-    width: 900px;
+    width: 100%;
     border: 1px solid gray;
     font-size: 18px;
     border-radius: 5px;
@@ -39,10 +62,6 @@ input, textarea {
 #input_button[disabled] {
     opacity: 0.4;
     cursor: not-allowed;
-}
-
-* {
-	margin: 10px 0;
 }
 
 .added {

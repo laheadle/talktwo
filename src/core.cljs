@@ -278,61 +278,81 @@
    [done (finalize-world @world)]
    [submit "Hide Preview" false]])
 
+(defn top-of-dialog [text]
+  [:div.top-of-dialog text])
+
 (defn revise! [world]
   (case (:situation @world)
-        0
-        [:div.dialog
-         "This is Talktwo, a dialog maker. Whip up a first draft, for your partner's eyes only."
-         [form! world]]
-        1
-        [:div.dialog
-         "This is Talktwo, a dialog maker, and you're in a dialog. To
-         keep the ball rolling, whip up a rough response to the
-         starter's first draft. You will have plenty of chances to
-         revise it, share it, or dump it."
-         [pretty @world 0
-          #(vector :div "Here is what the starter, " [name-text %] ", wrote")]
-         [form! world]]
-        2
-        [:div.dialog
-         "Make your revisions, taking into account the finisher's rough response."
-         [pretty @world 0 
-          #(vector :div [name-text %])]
-         [form! world]] 
-        [3 :finisher :changed]
-        [:div.dialog*
-         "The starter made changes. You should probably make some
-         too. Keep revising the dialog until you want to stop."
-         [diff @world 2 0] ;; from to
-         [form! world]]
-        [3 :starter :changed]
-        [:div.dialog
-         "The finisher made changes. You should probably make some
-         too. Keep revising the dialog until you want to stop."
-         [diff @world 2 0] ;; from to
-         [form! world]]
-        [3 :finisher :steady]
-        [:div.dialog
-         "The starter is holding steady with no changes. If you do the same, the dialog is complete."
-         [diff @world 2 0]
-         [form! world]]
-        [3 :starter :steady]
-        [:div.dialog
-         "The finisher is holding steady with no changes. If you do the same, the dialog is complete."
-         [diff @world 2 0]
-         [form! world]]))
+    0
+    [:div.dialog
+     [top-of-dialog "This is Talktwo, a dialog maker. Whip up a first draft, for your partner's eyes only."]
+     [form! world]]
+    1
+    [:div.dialog
+     [top-of-dialog [:span "Heads up! You're in a dialog started by "
+                     [name-text (get-in @world [:steps 0 :name])]
+                     ". To keep the ball rolling, whip up a rough
+         response. You will have plenty of chances to revise it, share
+         it, or dump it."]]
+     [pretty @world 0
+      #(vector :div "Here is what the starter, " [name-text %] ", wrote:")]
+     [form! world]]
+    2
+    [:div.dialog
+     [top-of-dialog "Make your revisions, taking into account the finisher's rough response."]
+     [pretty @world 0 
+      #(vector :div [name-text %])]
+     [form! world]] 
+    [3 :finisher :changed]
+    [:div.dialog
+     [top-of-dialog "The starter made changes. You should probably make some
+         too. Keep revising the dialog until you want to stop."]
+     [diff @world 2 0] ;; from to
+     [form! world]]
+    [3 :starter :changed]
+    [:div.dialog
+     [top-of-dialog "The finisher made changes. You should probably make some
+         too. Keep revising the dialog until you want to stop."]
+     [diff @world 2 0] ;; from to
+     [form! world]]
+    [3 :finisher :steady]
+    [:div.dialog
+     [top-of-dialog "The starter is holding steady with no changes. If you do the same, the dialog is complete."]
+     [diff @world 2 0]
+     [form! world]]
+    [3 :starter :steady]
+    [:div.dialog
+     [top-of-dialog "The finisher is holding steady with no changes. If you do the same, the dialog is complete."]
+     [diff @world 2 0]
+     [form! world]]))
+
+(defn logo! [world]
+  [:span {:style {:display "inline-block" :border "4px solid pink"
+                  :margin-right 5}}
+   [:span {:style {:display "inline-block" :border "4px solid aqua"}}
+    [:span.logo-text {:style {:display "inline-block" :padding "4px 6px"}} "T / t"]]])
+
+(defn slogan! [world] [:span.slogan "Talktwo: A Game of Infinite Dialogue"])
+
+(defn app! [world screen]
+  [:div.app
+   [:div.app-header
+    [logo! world]
+    [slogan! world]]
+   screen])
 
 (defn home []
   (let [world (r/atom (init (read-url)))]
     (prn (str "initializing: " @world))
     (fn []
-      (cond
-        (in-state @world :dialog-state :revising) (revise! world)
-        (in-state @world :dialog-state :previewing) (preview! world)
-        (in-state @world :dialog-state :viewing)
-        [:div.dialog
-         "This is Talktwo, a dialog maker. Here is a dialog. You can share the url."
-         [done @world]]))))
+      [app! @world
+       (cond
+         (in-state @world :dialog-state :revising) (revise! world)
+         (in-state @world :dialog-state :previewing) (preview! world)
+         (in-state @world :dialog-state :viewing)
+         [:div.dialog
+          "This is Talktwo, a dialog maker. Here is a dialog. You can share the url."
+          [done @world]])])))
 
 (dom/render [home] (.getElementById js/document "content"))
 
