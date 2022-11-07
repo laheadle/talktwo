@@ -257,14 +257,14 @@
      [:div.dialog-header-top
       "A dialog between"]
      [:div.dialog-header-starter
-      starter-name]
+      [name-text starter-name]]
      [:div.dialog-header-and
       "and"]
      [:div.dialog-header-finisher
-      finisher-name]]))
+      [name-text finisher-name]]]))
 
-(defn done [world]
-  [:div.done
+(defn dialog-body [world]
+  [:div.dialog-body
    [dialog-header world 0 1]
    [pretty world 0  #(vector :div [name-text %])]
    [pretty world 1 #(vector :div [name-text %])]])
@@ -293,7 +293,7 @@
        "the final dialog"
        "your partner's next turn")] ".)"]
    [:div.introduce-preview "Here is how the dialog currently looks:"]
-   [done (finalize-world @world)]
+   [dialog-body (finalize-world @world)]
    [:form
     {:on-submit (fn [e]
                   (. e preventDefault)
@@ -307,7 +307,7 @@
   (case (:situation @world)
     0
     [:div.app-body
-     [top-of-dialog "This is Talktwo, a dialog maker. Whip up a first draft, for your partner's eyes only."]
+     [top-of-dialog "Whip up a first draft of the starter's turn, for your partner's eyes only."]
      [form! world]]
     1
     [:div.app-body
@@ -373,8 +373,7 @@
          (in-state @world :dialog-state :previewing) (preview! world)
          (in-state @world :dialog-state :viewing)
          [:div.app-body
-          "This is Talktwo, a dialog maker. Here is a dialog. You can share the url."
-          [done @world]])])))
+          [dialog-body @world]])])))
 
 (dom/render [home] (.getElementById js/document "content"))
 

@@ -6,6 +6,21 @@
     margin-bottom: 15px;
 }
 
+.dialog-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.dialog-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.pretty {
+    width: 100%;
+}
 
 .app {
     margin: 30px auto;
