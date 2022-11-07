@@ -137,15 +137,22 @@
 (defn body-text [body]
   [:div.body body])
 
+(defn get--or-placeholder [world step key placeholder]
+  (let [it (get-in world [:steps step key])
+        it (if (empty? it)
+             placeholder
+             it)]
+    it))
+
+(defn get-name-or-placeholder [world step]
+  (get--or-placeholder world step :name "(no name yet)"))
+
+(defn get-body-or-placeholder [world step]
+  (get--or-placeholder world step :body "(no body yet)"))
+
 (defn pretty [world step label-header]
-  (let [name (get-in world [:steps step :name])
-        body (get-in world [:steps step :body])
-        name (if (empty? name)
-               "(no name yet)"
-               name)
-        body (if (empty? body)
-               "(no text yet)"
-               body)]
+  (let [name (get-name-or-placeholder world step)
+        body (get-body-or-placeholder world step)]
     [:div.pretty
      (label-header name)
      [body-text body]]))
@@ -243,10 +250,24 @@
    [submit "Preview" (boolean (< 0
                                  (count (pending-items @world))))]])
 
+(defn dialog-header [world starter finisher]
+  (let [finisher-name (get-name-or-placeholder world finisher)
+        starter-name (get-name-or-placeholder world starter)]
+    [:div.dialog-header
+     [:div.dialog-header-top
+      "A dialog between"]
+     [:div.dialog-header-starter
+      starter-name]
+     [:div.dialog-header-and
+      "and"]
+     [:div.dialog-header-finisher
+      finisher-name]]))
+
 (defn done [world]
   [:div.done
-   (pretty world 0  #(vector :div [name-text %]))
-   (pretty world 1 #(vector :div [name-text %]))])
+   [dialog-header world 0 1]
+   [pretty world 0  #(vector :div [name-text %])]
+   [pretty world 1 #(vector :div [name-text %])]])
 
 (defn preview! [world]
   [:form
