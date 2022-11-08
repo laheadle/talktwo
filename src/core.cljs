@@ -278,6 +278,7 @@
 
 (defn preview! [world]
   [:div.app-body
+   [dialog-body (finalize-world @world)]
    [:div.current-turn-status
     (if (self-is-steady @world)
       (if (dialog-is-complete @world)
@@ -291,7 +292,7 @@
       "Is the dialog complete? A link to it is copied to your
   clipboard. Send it to your partner!"
       "Are you done with your turn? A link to your partner's next turn is copied to your
-  clipboard. Send it to your partner!")]
+  clipboard. Send it to your partner! Tip: send it over email or social media.")]
    [:div.see-next-turn
     "(Click to see "
     [:a {:target "_blank"
@@ -299,8 +300,6 @@
      (if (dialog-is-complete @world)
        "the final dialog"
        "your partner's next turn")] ".)"]
-   [:div.introduce-preview "Here is how the dialog currently looks:"]
-   [dialog-body (finalize-world @world)]
    [:form
     {:on-submit (fn [e]
                   (. e preventDefault)
@@ -367,7 +366,7 @@
    [:span {:style {:display "inline-block" :border "4px solid aqua"}}
     [:span.logo-text {:style {:display "inline-block" :padding "4px 6px"}} "T / t"]]])
 
-(defn slogan! [world] [:span.slogan "Talktwo: A Game of Infinite Dialogue"])
+(defn slogan! [world] [:span.slogan "Talktwo"])
 
 (defn app! [world screen]
   [:div.app
@@ -378,8 +377,9 @@
 
 (defn about! [world]
   [:div.about
+   [:h1 "Talktwo: A Game of Infinite Dialog"]
    [:p "Talktwo is a game for two players that is dialog all the way down. The object of the game is to create a dialog through dialog."]
-   [:p "The players create a two-paragraph dialog between two characters, a starter and a finisher. The starter's paragraph is read first, and the finisher's paragraph is a response. They can share the dialog, or keep it to themselves."]
+   [:p "By playing Talktwo, players create a two-paragraph dialog between two characters, a starter and a finisher. The starter's paragraph is shown first, and the finisher's paragraph is a response. They can share the dialog, or keep it to themselves."]
    [:h3 "Playing the game"]
    [:p " One player,who plays the starter, takes the first turn (and the third,
    and the fifth...), and builds up the first paragraph.  The other
