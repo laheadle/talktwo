@@ -12,7 +12,7 @@
 
 (defn home-routes [{:keys [:request-method :uri] :as req}]
   (case [request-method uri]
-    [:get "/"] {:body (slurp "talktwo.html")
+    [:get "/"] {:body (slurp "index.html")
                 :status 200}
     [:get "/core.cljs"] {:body (slurp"core.cljs")
                          :status 200}
