@@ -355,24 +355,34 @@
      [diff @world 2 0]
      [form! world]]))
 
+(defn set-state-about! [world]
+  (set-state! world
+              :previous-dialog-state
+              (get-in @world [:state :dialog-state]))
+  (set-state! world :dialog-state :about))
+
 (defn logo! [world]
-  [:a {:on-click (fn [e]
-                   (set-state! world
-                    :previous-dialog-state
-                    (get-in @world [:state :dialog-state]))
-                   (set-state! world :dialog-state :about))
+  [:a {:on-click (fn [_] (set-state-about! world))
        :style {:display "inline-block" :border "4px solid pink"
+               :cursor :pointer
                :margin-right 5}}
    [:span {:style {:display "inline-block" :border "4px solid aqua"}}
     [:span.logo-text {:style {:display "inline-block" :padding "4px 6px"}} "T / t"]]])
 
 (defn slogan! [world] [:span.slogan "Talktwo"])
+(defn menu! [world] [:span.menu-outer [:span.menu-spacer]
+                     [:a.new-game {:on-click (fn [e]
+                                               (reset! world (init nil))
+                                               (set-state! world :dialog-state :not-focused))}
+                      "New Game"]
+                     [:a.about {:on-click (fn [_] (set-state-about! world))} "About"]])
 
 (defn app! [world screen]
   [:div.app
    [:div.app-header
     [logo! world]
-    [slogan! world]]
+    [slogan! world]
+    [menu! world]]
    screen])
 
 (defn about! [world]

@@ -18,6 +18,23 @@
     align-items: center;
 }
 
+span.menu-outer {
+    display: flex;
+    flex-grow: 2;
+}
+
+span.menu-spacer {
+    flex-grow: 2;
+}
+
+a.new-game  {
+    border-right: 2px solid black;
+}
+
+span.menu-outer a {
+    padding: 0 4px;
+    cursor: pointer;
+}
 .pretty {
     width: 100%;
 }
