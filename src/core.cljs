@@ -6,7 +6,7 @@
             ))
 
 (defn init [{:keys [steps self]
-             :or {self :visitor
+             :or {self :starter
                   steps []}}]
   {:self self
    :steps steps
@@ -22,7 +22,7 @@
                    (get steps 1))
    :state {:dialog-state
            (cond
-             (#{:visitor} self)
+             (= [self steps] [:starter []])
              :about
              (#{:audience} self)
              :viewing
@@ -311,6 +311,7 @@
   [:div.top-of-dialog text])
 
 (defn revise! [world]
+  (prn (:situation @world) "(:situation @world)")
   (case (:situation @world)
     0
     [:div.app-body
@@ -385,17 +386,22 @@
    player, the finisher, takes the second turn (and the fourth, and
    the sixth...) and builds up the second paragraph."]
    [:p "During each turn, one player modifies their character's name or paragraph. When both players are happy with the dialog, they both win, and get a link they can use to share their dialog with anyone they choose. If the dialog stops before both players are happy with it, nobody wins."]
-   [:form {:on-submit
-           (fn [e] (. e preventDefault)
-             (set-state! world :dialog-state
-                         (get-in @world [:state
-                                         :previous-dialog-state])))}
-    [submit "Show Dialog" false]]])
+   (let [next-state (get-in @world [:state
+                                    :previous-dialog-state])
+         next-state-label (if next-state "Go Back to Game"
+                              "Play New Game")
+         next-state (or next-state :not-focused)]
+     [:form {:on-submit
+             (fn [e] (. e preventDefault)
+               (set-state! world :dialog-state
+                           next-state))}
+      [submit next-state-label false]])])
 
 (defn home []
   (let [world (r/atom (init (read-url)))]
     (prn (str "initializing: " @world))
-    (fn []
+    (fn [] (prn @world "@world")
+      (prn "(in-state @world :dialog-state :revising)" (in-state @world :dialog-state :revising))
       [app! world
        (cond
          (in-state @world :dialog-state :revising) (revise! world)
