@@ -6,7 +6,7 @@
             ))
 
 (defn init [{:keys [steps self]
-             :or {self :starter
+             :or {self :visitor
                   steps []}}]
   {:self self
    :steps steps
@@ -21,8 +21,12 @@
                     :body ""}
                    (get steps 1))
    :state {:dialog-state
-           (if (#{:audience} self)
+           (cond
+             (#{:visitor} self)
+             :about
+             (#{:audience} self)
              :viewing
+             :else
              :not-focused)}
    :max {:name 80
          :body 600}})
@@ -258,7 +262,7 @@
         starter-name (get-name-or-placeholder world starter)]
     [:div.dialog-header
      [:div.dialog-header-top
-      "A dialog between"]
+      "An Imaginary Dialog Between"]
      [:div.dialog-header-starter
       [name-text starter-name]]
      [:div.dialog-header-and
@@ -310,7 +314,7 @@
   (case (:situation @world)
     0
     [:div.app-body
-     [top-of-dialog "Whip up a first draft of the starter's turn, for your partner's eyes only."]
+     [top-of-dialog "Whip up a first draft of the starter's paragraph, for your partner's eyes only."]
      [form! world]]
     1
     [:div.app-body
@@ -372,13 +376,21 @@
    screen])
 
 (defn about! [world]
-  [:form {:on-submit
-         (fn [e] (. e preventDefault)
-           (set-state! world :dialog-state
-                       (get-in @world [:state
-                                       :previous-dialog-state])))}
-   "About"
-   [submit "Hide" false]])
+  [:div.about
+   [:p "Talktwo is a game for two players that is dialog all the way down. The object of the game is to create a dialog through dialog."]
+   [:p "The players create a two-paragraph dialog between two characters, a starter and a finisher. The starter's paragraph is read first, and the finisher's paragraph is a response. They can share the dialog, or keep it to themselves."]
+   [:h3 "Playing the game"]
+   [:p " One player,who plays the starter, takes the first turn (and the third,
+   and the fifth...), and builds up the first paragraph.  The other
+   player, the finisher, takes the second turn (and the fourth, and
+   the sixth...) and builds up the second paragraph."]
+   [:p "During each turn, one player modifies their character's name or paragraph. When both players are happy with the dialog, they both win, and get a link they can use to share their dialog with anyone they choose. If the dialog stops before both players are happy with it, nobody wins."]
+   [:form {:on-submit
+           (fn [e] (. e preventDefault)
+             (set-state! world :dialog-state
+                         (get-in @world [:state
+                                         :previous-dialog-state])))}
+    [submit "Show Dialog" false]]])
 
 (defn home []
   (let [world (r/atom (init (read-url)))]
