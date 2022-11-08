@@ -108,11 +108,11 @@
     (empty? (get-input world :name))
     (conj "Give yourself a name")
     (empty? (get-input world :body))
-    (conj "Give yourself a body")
+    (conj "Give yourself a paragraph")
     (too-long? world :name)
     (conj "Shrink your name - it is too big")
     (too-long? world :body)
-    (conj "Shrink your body - it is too big")))
+    (conj "Shrink your paragraph - it is too big")))
 
 (defn pending [world]
   [:ol.pending
@@ -124,7 +124,7 @@
 (defn remaining [world key]
   (let [input-value (get-input world key)
         label (case key
-                :body "Body"
+                :body "Paragraph"
                 :name "What do we call you?")
         focused (in-state world :dialog-state (case key
                                                :body :body-focused
@@ -155,7 +155,7 @@
   (get--or-placeholder world step :name "(no name yet)"))
 
 (defn get-body-or-placeholder [world step]
-  (get--or-placeholder world step :body "(no body yet)"))
+  (get--or-placeholder world step :body "(no paragraph yet)"))
 
 (defn pretty [world step label-header]
   (let [name (get-name-or-placeholder world step)
