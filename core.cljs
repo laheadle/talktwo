@@ -279,7 +279,7 @@
 (defn app-body [key child]
   (r/create-class
    {:component-did-mount (fn [] (. js/window scrollTo 0 0) (prn "scrollTo"))
-    :reagent-render (fn [key child] (prn "key" key [:div.app-body {:key key} child])
+    :reagent-render (fn [key child]
                       [:div.app-body {:key key} child]) }))
 
 (defn preview! [world]
@@ -376,7 +376,10 @@
    [:span {:style {:display "inline-block" :border "4px solid aqua"}}
     [:span.logo-text {:style {:display "inline-block" :padding "4px 6px"}} "T / t"]]])
 
-(defn slogan! [world] [:span.slogan "Talktwo"])
+(defn slogan! [world]
+  [:span.slogan {:on-click (fn [_] (set-state-about! world))}
+   "Talktwo"])
+
 (defn menu! [world] [:span.menu-outer [:span.menu-spacer]
                      [:a.new-game {:on-click (fn [e]
                                                (reset! world (init nil))

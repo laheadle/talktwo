@@ -54,6 +54,7 @@ span.menu-outer a {
 }
 
 .slogan {
+    cursor: pointer;
 }
 
 .app-body {
