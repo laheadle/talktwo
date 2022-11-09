@@ -92,8 +92,8 @@
     (swap! world set-state :dialog-state :not-focused)))
 
 (defn get-input [world key]
-  (prn (get-in world [:current-step key])
-       [:current-step key])
+  ;; (prn (get-in world [:current-step key])
+  ;;      [:current-step key])
   (get-in world [:current-step key]))
 
 (defn pending-item [text]
@@ -276,84 +276,91 @@
    [pretty world 0  #(vector :div [name-text %])]
    [pretty world 1 #(vector :div [name-text %])]])
 
+(defn app-body [key child]
+  (r/create-class
+   {:component-did-mount (fn [] (. js/window scrollTo 0 0) (prn "scrollTo"))
+    :reagent-render (fn [key child] (prn "key" key [:div.app-body {:key key} child])
+                      [:div.app-body {:key key} child]) }))
+
 (defn preview! [world]
-  [:div.app-body
-   [dialog-body (finalize-world @world)]
-   [:div.current-turn-status
-    (if (self-is-steady @world)
-      (if (dialog-is-complete @world)
-        "You are ready to complete the dialogue."
-        "You are holding steady with no changes, so your partner can
+ [app-body "preview"
+   [:<>
+    [dialog-body (finalize-world @world)]
+    [:div.current-turn-status
+     (if (self-is-steady @world)
+       (if (dialog-is-complete @world)
+         "You are ready to complete the dialogue."
+         "You are holding steady with no changes, so your partner can
   complete the dialog.")
-      "You have made changes, so you will get another turn after your
+       "You have made changes, so you will get another turn after your
   partner's.")]
-   [:div.call-to-send
-    (if (dialog-is-complete @world)
-      "Is the dialog complete? A link to it is copied to your
-  clipboard. Send it to your partner!"
-      "Are you done with your turn? A link to your partner's next turn is copied to your
-  clipboard. Send it to your partner! Tip: send it over email or social media.")]
-   [:div.see-next-turn
-    "(Click to see "
-    [:a {:target "_blank"
-         :href (create-URL (next-world @world))}
+    [:div.call-to-send
      (if (dialog-is-complete @world)
-       "the final dialog"
-       "your partner's next turn")] ".)"]
-   [:form
-    {:on-submit (fn [e]
-                  (. e preventDefault)
-                  (swap! world set-state :dialog-state :not-focused))}
-    [submit "Hide Preview" false]]])
+       "Is the dialog complete? A link to it is copied to your
+  clipboard. Send it to your partner!"
+       "Are you done with your turn? A link to your partner's next turn is copied to your
+  clipboard. Send it to your partner! Tip: send it over email or social media.")]
+    [:div.see-next-turn
+     "(Click to see "
+     [:a {:target "_blank"
+          :href (create-URL (next-world @world))}
+      (if (dialog-is-complete @world)
+        "the final dialog"
+        "your partner's next turn")] ".)"]
+    [:form
+     {:on-submit (fn [e]
+                   (. e preventDefault)
+                   (swap! world set-state :dialog-state :not-focused))}
+     [submit "Hide Preview" false]]]])
 
 (defn top-of-dialog [text]
   [:div.top-of-dialog text])
 
 (defn revise! [world]
-  (prn (:situation @world) "(:situation @world)")
-  (case (:situation @world)
-    0
-    [:div.app-body
-     [top-of-dialog "Whip up a first draft of the starter's paragraph, for your partner's eyes only."]
-     [form! world]]
-    1
-    [:div.app-body
-     [top-of-dialog [:span "Heads up! You're in a dialog started by "
-                     [name-text (get-in @world [:steps 0 :name])]
-                     ". To keep the ball rolling, whip up a rough
+  [app-body "revise"
+   (case (:situation @world)
+     0
+     [:<>
+      [top-of-dialog "Whip up a first draft of the starter's paragraph, for your partner's eyes only."]
+      [form! world]]
+     1
+     [:<>
+      [top-of-dialog [:span "Heads up! You're in a dialog started by "
+                      [name-text (get-in @world [:steps 0 :name])]
+                      ". To keep the ball rolling, whip up a rough
          response. You will have plenty of chances to revise it, share
          it, or dump it."]]
-     [pretty @world 0
-      #(vector :div "Here is what the starter, " [name-text %] ", wrote:")]
-     [form! world]]
-    2
-    [:div.app-body
-     [top-of-dialog "Make your revisions, taking into account the finisher's rough response."]
-     [pretty @world 0 
-      #(vector :div [name-text %])]
-     [form! world]] 
-    [3 :finisher :changed]
-    [:div.app-body
-     [top-of-dialog "The starter made changes. You should probably make some
+      [pretty @world 0
+       #(vector :div "Here is what the starter, " [name-text %] ", wrote:")]
+      [form! world]]
+     2
+     [:<>
+      [top-of-dialog "Make your revisions, taking into account the finisher's rough response."]
+      [pretty @world 0 
+       #(vector :div [name-text %])]
+      [form! world]]
+     [3 :finisher :changed]
+     [:<>
+      [top-of-dialog "The starter made changes. You should probably make some
          too. Keep revising the dialog until you want to stop."]
-     [diff @world 2 0] ;; from to
-     [form! world]]
-    [3 :starter :changed]
-    [:div.app-body
-     [top-of-dialog "The finisher made changes. You should probably make some
+      [diff @world 2 0] ;; from to
+      [form! world]]
+     [3 :starter :changed]
+     [:<>
+      [top-of-dialog "The finisher made changes. You should probably make some
          too. Keep revising the dialog until you want to stop."]
-     [diff @world 2 0] ;; from to
-     [form! world]]
-    [3 :finisher :steady]
-    [:div.app-body
-     [top-of-dialog "The starter is holding steady with no changes. If you do the same, the dialog is complete."]
-     [diff @world 2 0]
-     [form! world]]
-    [3 :starter :steady]
-    [:div.app-body
-     [top-of-dialog "The finisher is holding steady with no changes. If you do the same, the dialog is complete."]
-     [diff @world 2 0]
-     [form! world]]))
+      [diff @world 2 0] ;; from to
+      [form! world]]
+     [3 :finisher :steady]
+     [:<>
+      [top-of-dialog "The starter is holding steady with no changes. If you do the same, the dialog is complete."]
+      [diff @world 2 0]
+      [form! world]]
+     [3 :starter :steady]
+     [:<>
+      [top-of-dialog "The finisher is holding steady with no changes. If you do the same, the dialog is complete."]
+      [diff @world 2 0]
+      [form! world]])])
 
 (defn set-state-about! [world]
   (set-state! world
@@ -378,34 +385,35 @@
                      [:a.about {:on-click (fn [_] (set-state-about! world))} "About"]])
 
 (defn app! [world screen]
-  [:div.app
-   [:div.app-header
+  [:div.app {:key (get-in @world [:state :dialog-state])}
+   [:div.app-header {:key "header"}
     [logo! world]
     [slogan! world]
     [menu! world]]
    screen])
 
 (defn about! [world]
-  [:div.about
-   [:h1 "Talktwo: A Game of Infinite Dialog"]
-   [:p "Talktwo is a game for two players that is dialog all the way down. The object of the game is to create a dialog through dialog."]
-   [:p "By playing Talktwo, players create a two-paragraph dialog between two characters, a starter and a finisher. The starter's paragraph is shown first, and the finisher's paragraph is a response. They can share the dialog, or keep it to themselves."]
-   [:h3 "Playing the game"]
-   [:p " One player,who plays the starter, takes the first turn (and the third,
+  [app-body "about"
+   [:<>
+    [:h1 "Talktwo: A Game of Infinite Dialog"]
+    [:p "Talktwo is a game for two players that is dialog all the way down. The object of the game is to create a dialog through dialog."]
+    [:p "By playing Talktwo, players create a two-paragraph dialog between two characters, a starter and a finisher. The starter's paragraph is shown first, and the finisher's paragraph is a response. They can share the dialog, or keep it to themselves."]
+    [:h3 "Playing the game"]
+    [:p " One player,who plays the starter, takes the first turn (and the third,
    and the fifth...), and builds up the first paragraph.  The other
    player, the finisher, takes the second turn (and the fourth, and
    the sixth...) and builds up the second paragraph."]
-   [:p "During each turn, one player modifies their character's name or paragraph. When both players are happy with the dialog, they both win, and get a link they can use to share their dialog with anyone they choose. If the dialog stops before both players are happy with it, nobody wins."]
-   (let [next-state (get-in @world [:state
-                                    :previous-dialog-state])
-         next-state-label (if next-state "Go Back to Game"
-                              "Play New Game")
-         next-state (or next-state :not-focused)]
-     [:form {:on-submit
-             (fn [e] (. e preventDefault)
-               (set-state! world :dialog-state
-                           next-state))}
-      [submit next-state-label false]])])
+    [:p "During each turn, one player modifies their character's name or paragraph. When both players are happy with the dialog, they both win, and get a link they can use to share their dialog with anyone they choose. If the dialog stops before both players are happy with it, nobody wins."]
+    (let [next-state (get-in @world [:state
+                                     :previous-dialog-state])
+          next-state-label (if next-state "Go Back to Game"
+                               "Play New Game")
+          next-state (or next-state :not-focused)]
+      [:form {:on-submit
+              (fn [e] (. e preventDefault)
+                (set-state! world :dialog-state
+                            next-state))}
+       [submit next-state-label false]])]])
 
 (defn home []
   (let [world (r/atom (init (read-url)))]
@@ -418,7 +426,8 @@
          (in-state @world :dialog-state :about) (about! world)
          (in-state @world :dialog-state :previewing) (preview! world)
          (in-state @world :dialog-state :viewing)
-         [:div.app-body
+         [app-body
+          "viewing"
           [dialog-body @world]])])))
 
 (dom/render [home] (.getElementById js/document "content"))
