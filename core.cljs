@@ -226,6 +226,9 @@
   (and (partner-is-steady world)
        (self-is-steady world)))
 
+(defn make-scroller []
+  (. js/window setTimeout #(. js/window scrollTo 0 0) 10))
+
 (defn next-world [world]
   "Transform the current world into the next turn state"
   (if (dialog-is-complete world)
@@ -250,7 +253,8 @@
                  (. e preventDefault)
                  (.. js/navigator -clipboard
                      (writeText (create-URL (next-world @world))))
-                 (swap! world set-state :dialog-state :previewing))}
+                 (swap! world set-state :dialog-state :previewing)
+                 (make-scroller))}
    [name! world]
    [body! world]
    [pending @world]
@@ -276,14 +280,11 @@
    [pretty world 0  #(vector :div [name-text %])]
    [pretty world 1 #(vector :div [name-text %])]])
 
-(defn app-body [key child]
-  (r/create-class
-   {:component-did-mount (fn [] (. js/window scrollTo 0 0) (prn "scrollTo"))
-    :reagent-render (fn [key child]
-                      [:div.app-body {:key key} child]) }))
+(defn app-body [child]
+  [:div.app-body child])
 
 (defn preview! [world]
- [app-body "preview"
+ [app-body
    [:<>
     [dialog-body (finalize-world @world)]
     [:div.current-turn-status
@@ -310,14 +311,15 @@
     [:form
      {:on-submit (fn [e]
                    (. e preventDefault)
-                   (swap! world set-state :dialog-state :not-focused))}
+                   (swap! world set-state :dialog-state :not-focused)
+                   (make-scroller))}
      [submit "Hide Preview" false]]]])
 
 (defn top-of-dialog [text]
   [:div.top-of-dialog text])
 
 (defn revise! [world]
-  [app-body "revise"
+  [app-body
    (case (:situation @world)
      0
      [:<>
@@ -388,15 +390,15 @@
                      [:a.about {:on-click (fn [_] (set-state-about! world))} "About"]])
 
 (defn app! [world screen]
-  [:div.app {:key (get-in @world [:state :dialog-state])}
-   [:div.app-header {:key "header"}
+  [:div.app
+   [:div.app-header 
     [logo! world]
     [slogan! world]
     [menu! world]]
    screen])
 
 (defn about! [world]
-  [app-body "about"
+  [app-body
    [:<>
     [:h1 "Talktwo: A Game of Infinite Dialog"]
     [:p "Talktwo is a game for two players that is dialog all the way down. The object of the game is to create a dialog through dialog."]
@@ -414,6 +416,7 @@
           next-state (or next-state :not-focused)]
       [:form {:on-submit
               (fn [e] (. e preventDefault)
+                (make-scroller)
                 (set-state! world :dialog-state
                             next-state))}
        [submit next-state-label false]])]])
@@ -430,7 +433,6 @@
          (in-state @world :dialog-state :previewing) (preview! world)
          (in-state @world :dialog-state :viewing)
          [app-body
-          "viewing"
           [dialog-body @world]])])))
 
 (dom/render [home] (.getElementById js/document "content"))
